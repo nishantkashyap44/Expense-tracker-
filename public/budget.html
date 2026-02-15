@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget - Expense Tracker Pro</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .budget-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .budget-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: transform 0.2s;
+        }
+        
+        .budget-card:hover {
+            transform: translateX(4px);
+        }
+        
+        .budget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .budget-info {
+            flex: 1;
+        }
+        
+        .budget-category {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .budget-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .budget-amounts {
+            text-align: right;
+        }
+        
+        .budget-spent {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .budget-total {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .progress-wrapper {
+            margin: 1rem 0;
+        }
+        
+        .progress-bar {
+            height: 12px;
+            background: var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill.success {
+            background: linear-gradient(90deg, var(--success-color), var(--success-light));
+        }
+        
+        .progress-fill.warning {
+            background: linear-gradient(90deg, var(--warning-color), #fbbf24);
+        }
+        
+        .progress-fill.danger {
+            background: linear-gradient(90deg, var(--danger-color), var(--danger-light));
+        }
+        
+        .progress-fill::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            to {
+                left: 100%;
+            }
+        }
+        
+        .budget-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .stat-label {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .stat-value.positive {
+            color: var(--success-color);
+        }
+        
+        .stat-value.negative {
+            color: var(--danger-color);
+        }
+        
+        .percentage-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .percentage-badge.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+        
+        .percentage-badge.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .percentage-badge.danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .btn-add-budget {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+            transition: transform 0.2s;
+            z-index: 100;
+        }
+        
+        .btn-add-budget:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Loading budgets...</p>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-wallet"></i></div>
+                <span class="logo-text">Expense<strong>Pro</strong></span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+                <li class="nav-item"><a href="/transactions.html" class="nav-link"><i class="fas fa-exchange-alt"></i><span>Transactions</span></a></li>
+                <li class="nav-item"><a href="/expenses.html" class="nav-link"><i class="fas fa-receipt"></i><span>Expenses</span></a></li>
+                <li class="nav-item active"><a href="/budget.html" class="nav-link"><i class="fas fa-chart-pie"></i><span>Budget</span></a></li>
+                <li class="nav-item"><a href="/reports.html" class="nav-link"><i class="fas fa-file-chart-line"></i><span>Reports</span></a></li>
+            </ul>
+            <div class="nav-divider"></div>
+            <ul class="nav-list nav-bottom">
+                <li class="nav-item logout-item"><a href="#" class="nav-link" id="logoutBtn"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="top-navbar">
+            <div class="navbar-left">
+                <button class="mobile-toggle-btn" id="mobileToggle"><i class="fas fa-bars"></i></button>
+                <h1 class="page-title">Budget Planning</h1>
+            </div>
+            <div class="navbar-right">
+                <button class="icon-btn theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                <div class="user-profile">
+                    <div class="user-avatar"><span id="userInitials">U</span></div>
+                    <div class="user-info"><span class="user-name" id="userName">User</span></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <!-- Summary Cards -->
+            <div class="stats-grid">
+                <div class="stat-card glass-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(129, 140, 248, 0.1)); color: var(--primary-color);"><i class="fas fa-wallet"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Budget</div>
+                        <div class="stat-value" id="totalBudget"><div class="skeleton-loader"></div></div>
+                        <div class="stat-trend">This month</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card glass-card">
+                    <div class="stat-icon expense-icon"><i class="fas fa-arrow-down"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Spent</div>
+                        <div class="stat-value" id="totalSpent"><div class="skeleton-loader"></div></div>
+                        <div class="stat-trend" id="spentPercentage">0% used</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card glass-card">
+                    <div class="stat-icon savings-icon"><i class="fas fa-piggy-bank"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-label">Remaining</div>
+                        <div class="stat-value" id="remaining"><div class="skeleton-loader"></div></div>
+                        <div class="stat-trend" id="remainingPercentage">Available</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget List -->
+            <div class="budget-list" id="budgetList">
+                <div class="skeleton-loader" style="height: 150px;"></div>
+                <div class="skeleton-loader" style="height: 150px;"></div>
+                <div class="skeleton-loader" style="height: 150px;"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Budget Button -->
+    <button class="btn-add-budget" id="addBudgetBtn" title="Add Budget">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/budget.js"></script>
+</body>
+</html>

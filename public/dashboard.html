@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker Pro - Dashboard</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Loading dashboard...</p>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <span class="logo-text">Expense<strong>Pro</strong></span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item active" data-page="dashboard">
+                    <a href="#dashboard" class="nav-link">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="transactions">
+                    <a href="#transactions" class="nav-link">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>Transactions</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="expenses">
+                    <a href="#expenses" class="nav-link">
+                        <i class="fas fa-receipt"></i>
+                        <span>Expenses</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="budget">
+                    <a href="#budget" class="nav-link">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Budget</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="reports">
+                    <a href="#reports" class="nav-link">
+                        <i class="fas fa-file-chart-line"></i>
+                        <span>Reports</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="nav-divider"></div>
+
+            <ul class="nav-list nav-bottom">
+                <li class="nav-item" data-page="settings">
+                    <a href="#settings" class="nav-link">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item logout-item">
+                    <a href="#logout" class="nav-link" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Navbar -->
+        <header class="top-navbar">
+            <div class="navbar-left">
+                <button type="button" class="mobile-toggle-btn" id="mobileToggle" title="Toggle Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="page-title">Dashboard Overview</h1>
+            </div>
+
+            <div class="navbar-right">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search transactions..." id="searchInput">
+                </div>
+
+                <button type="button" class="icon-btn theme-toggle" id="themeToggle" title="Toggle Theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+
+                <div class="notification-wrapper">
+                    <button type="button" class="icon-btn notification-btn" id="notificationBtn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                </div>
+
+                <div class="user-profile" id="userProfile">
+                    <div class="user-avatar">
+                        <span id="userInitials">U</span>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name" id="userName">Loading...</span>
+                        <span class="user-role">User</span>
+                    </div>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-container">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <!-- Wallet Balance Card -->
+                <div class="stat-card glass-card">
+                    <div class="stat-icon wallet-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Wallet Balance</div>
+                        <div class="stat-value" id="walletBalance">
+                            <div class="skeleton-loader"></div>
+                        </div>
+                        <div class="stat-trend">
+                            <span class="trend-icon">
+                                <i class="fas fa-arrow-up"></i>
+                            </span>
+                            <span class="trend-text">Total available</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Income Card -->
+                <div class="stat-card glass-card">
+                    <div class="stat-icon income-icon">
+                        <i class="fas fa-arrow-trend-up"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Monthly Income</div>
+                        <div class="stat-value" id="monthlyIncome">
+                            <div class="skeleton-loader"></div>
+                        </div>
+                        <div class="stat-trend positive">
+                            <span class="trend-icon">
+                                <i class="fas fa-arrow-up"></i>
+                            </span>
+                            <span class="trend-text" id="incomeChange">This month</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Expenses Card -->
+                <div class="stat-card glass-card">
+                    <div class="stat-icon expense-icon">
+                        <i class="fas fa-arrow-trend-down"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Monthly Expenses</div>
+                        <div class="stat-value" id="monthlyExpense">
+                            <div class="skeleton-loader"></div>
+                        </div>
+                        <div class="stat-trend negative">
+                            <span class="trend-icon">
+                                <i class="fas fa-arrow-down"></i>
+                            </span>
+                            <span class="trend-text" id="expenseChange">This month</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Savings Card -->
+                <div class="stat-card glass-card">
+                    <div class="stat-icon savings-icon">
+                        <i class="fas fa-piggy-bank"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Monthly Savings</div>
+                        <div class="stat-value" id="monthlySavings">
+                            <div class="skeleton-loader"></div>
+                        </div>
+                        <div class="stat-trend">
+                            <span class="trend-icon">
+                                <i class="fas fa-percentage"></i>
+                            </span>
+                            <span class="trend-text" id="savingsRate">0% rate</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <!-- Spending Trend Chart -->
+                <div class="chart-card glass-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-line"></i>
+                            Income vs Expenses
+                        </h3>
+                        <div class="card-actions">
+                            <select class="period-selector" id="trendPeriod" title="Select period">
+                                <option value="6">Last 6 Months</option>
+                                <option value="12">Last 12 Months</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                        <div class="chart-empty-state" id="trendChartEmpty" style="display: none;">
+                            <i class="fas fa-chart-line"></i>
+                            <p>No data available for the selected period</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Breakdown Chart -->
+                <div class="chart-card glass-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-pie"></i>
+                            Top Expense Categories
+                        </h3>
+                        <div class="card-actions">
+                            <button type="button" class="btn-icon" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                        <div class="chart-empty-state" id="categoryChartEmpty" style="display: none;">
+                            <i class="fas fa-chart-pie"></i>
+                            <p>No expenses recorded this month</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity & Budget Section -->
+            <div class="bottom-grid">
+                <!-- Recent Transactions -->
+                <div class="activity-card glass-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-clock-rotate-left"></i>
+                            Recent Transactions
+                        </h3>
+                        <a href="#transactions" class="view-all-link">
+                            View All
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="transaction-list" id="recentTransactions">
+                            <!-- Loading State -->
+                            <div class="transaction-loading">
+                                <div class="skeleton-list">
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="empty-state" id="transactionsEmpty" style="display: none;">
+                            <i class="fas fa-inbox"></i>
+                            <p>No recent transactions</p>
+                            <button type="button" class="btn-primary">Add Transaction</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget Overview -->
+                <div class="budget-card glass-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-bullseye"></i>
+                            Budget Status
+                        </h3>
+                        <a href="#budget" class="view-all-link">
+                            Manage
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="budget-list" id="budgetList">
+                            <!-- Loading State -->
+                            <div class="budget-loading">
+                                <div class="skeleton-list">
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="empty-state" id="budgetEmpty" style="display: none;">
+                            <i class="fas fa-chart-pie"></i>
+                            <p>No budgets set for this month</p>
+                            <button type="button" class="btn-primary">Create Budget</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="/js/utils.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>

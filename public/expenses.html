@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenses - Expense Tracker Pro</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .expense-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .expense-card {
+            background: var(--glass-bg);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: transform 0.2s;
+        }
+        
+        .expense-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .expense-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .expense-category {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .expense-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(248, 113, 113, 0.1));
+            color: var(--danger-color);
+            font-size: 1.25rem;
+        }
+        
+        .expense-amount {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--danger-color);
+            margin: 0.5rem 0;
+        }
+        
+        .expense-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .expense-detail {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+        }
+        
+        .expense-label {
+            color: var(--text-secondary);
+        }
+        
+        .expense-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .btn-add-expense {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+            transition: transform 0.2s;
+            z-index: 100;
+        }
+        
+        .btn-add-expense:hover {
+            transform: scale(1.1);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        /* moved inline styles into classes to avoid inline styles */
+        .stat-icon.stat-warning {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1));
+            color: var(--warning-color);
+        }
+
+        .stat-icon.stat-info {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(96, 165, 250, 0.1));
+            color: var(--info-color);
+        }
+
+        .skeleton-loader.skeleton-card {
+            height: 200px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 1.5rem;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--bg-primary);
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Loading expenses...</p>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-wallet"></i></div>
+                <span class="logo-text">Expense<strong>Pro</strong></span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+                <li class="nav-item"><a href="/transactions.html" class="nav-link"><i class="fas fa-exchange-alt"></i><span>Transactions</span></a></li>
+                <li class="nav-item active"><a href="/expenses.html" class="nav-link"><i class="fas fa-receipt"></i><span>Expenses</span></a></li>
+                <li class="nav-item"><a href="/budget.html" class="nav-link"><i class="fas fa-chart-pie"></i><span>Budget</span></a></li>
+                <li class="nav-item"><a href="/reports.html" class="nav-link"><i class="fas fa-file-chart-line"></i><span>Reports</span></a></li>
+            </ul>
+            <div class="nav-divider"></div>
+            <ul class="nav-list nav-bottom">
+                <li class="nav-item logout-item"><a href="#" class="nav-link" id="logoutBtn"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="top-navbar">
+            <div class="navbar-left">
+                <button class="mobile-toggle-btn" id="mobileToggle"><i class="fas fa-bars"></i></button>
+                <h1 class="page-title">Expenses</h1>
+            </div>
+            <div class="navbar-right">
+                <button class="icon-btn theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                <div class="user-profile">
+                    <div class="user-avatar"><span id="userInitials">U</span></div>
+                    <div class="user-info"><span class="user-name" id="userName">User</span></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card glass-card">
+                    <div class="stat-icon expense-icon"><i class="fas fa-receipt"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Expenses</div>
+                        <div class="stat-value" id="totalExpense"><div class="skeleton-loader"></div></div>
+                        <div class="stat-trend">This month</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card glass-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1)); color: var(--warning-color);"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-label">Top Category</div>
+                        <div class="stat-value" id="topCategory" style="font-size: 1.5rem;">Loading...</div>
+                        <div class="stat-trend" id="topCategoryAmount">₹0</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card glass-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(96, 165, 250, 0.1)); color: var(--info-color);"><i class="fas fa-list"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Categories</div>
+                        <div class="stat-value" id="totalCategories">0</div>
+                        <div class="stat-trend">Categories used</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expenses Grid -->
+            <div class="expense-grid" id="expenseGrid">
+                <div class="skeleton-loader" style="height: 200px;"></div>
+                <div class="skeleton-loader" style="height: 200px;"></div>
+                <div class="skeleton-loader" style="height: 200px;"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Expense Button -->
+    <button class="btn-add-expense" id="addExpenseBtn" title="Add Expense">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- Add Expense Modal -->
+    <div class="modal" id="addExpenseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Expense</h3>
+                <button class="modal-close" id="closeModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="expenseForm">
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input type="number" name="amount" placeholder="Enter amount" required step="0.01" min="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category" required>
+                            <option value="">Select category</option>
+                            <option value="Food">Food</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Education">Education</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" placeholder="Enter description (optional)" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-plus"></i> Add Expense
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/expenses.js"></script>
+</body>
+</html>

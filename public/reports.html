@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Expense Tracker Pro</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Loading reports...</p>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-wallet"></i></div>
+                <span class="logo-text">Expense<strong>Pro</strong></span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+                <li class="nav-item"><a href="/transactions.html" class="nav-link"><i class="fas fa-exchange-alt"></i><span>Transactions</span></a></li>
+                <li class="nav-item"><a href="/expenses.html" class="nav-link"><i class="fas fa-receipt"></i><span>Expenses</span></a></li>
+                <li class="nav-item"><a href="/budget.html" class="nav-link"><i class="fas fa-chart-pie"></i><span>Budget</span></a></li>
+                <li class="nav-item active"><a href="/reports.html" class="nav-link"><i class="fas fa-chart-line" aria-hidden="true"></i><span>Reports</span></a></li>
+            </ul>
+            <div class="nav-divider"></div>
+            <ul class="nav-list nav-bottom">
+                <li class="nav-item logout-item"><a href="#" class="nav-link" id="logoutBtn"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="top-navbar">
+            <div class="navbar-left">
+                <button class="mobile-toggle-btn" id="mobileToggle"><i class="fas fa-bars"></i></button>
+                <h1 class="page-title">Financial Reports</h1>
+            </div>
+            <div class="navbar-right">
+                <button class="icon-btn theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                <div class="user-profile">
+                    <div class="user-avatar"><span id="userInitials">U</span></div>
+                    <div class="user-info"><span class="user-name" id="userName">User</span></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <!-- Summary Cards -->
+            <div class="stats-grid">
+                <div class="stat-card glass-card">
+                    <div class="stat-icon income-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Income (6M)</div>
+                        <div class="stat-value" id="totalIncome6M"><div class="skeleton-loader"></div></div>
+                        <div class="stat-trend">Last 6 months</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card glass-card">
+                    <div class="stat-icon expense-icon"><i class="fas fa-money-bill-wave" aria-hidden="true"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Expenses (6M)</div>
+                        <div class="stat-value" id="totalExpense6M"><div class="skeleton-loader"></div></div>
+                        <div class="stat-trend">Last 6 months</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card glass-card">
+                    <div class="stat-icon savings-icon"><i class="fas fa-piggy-bank"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-label">Net Savings (6M)</div>
+                        <div class="stat-value" id="netSavings6M"><div class="skeleton-loader"></div></div>
+                        <div class="stat-trend" id="savingsRate6M">0% rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <!-- Monthly Trend Chart -->
+                <div class="chart-card glass-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-line"></i>
+                            Monthly Income vs Expenses Trend
+                        </h3>
+                        <div class="card-actions">
+                            <select class="period-selector" id="trendPeriod">
+                                <option value="6">Last 6 Months</option>
+                                <option value="12">Last 12 Months</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                        <div class="chart-empty-state" id="trendChartEmpty" style="display: none;">
+                            <i class="fas fa-chart-line"></i>
+                            <p>No data available</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Breakdown Chart -->
+                <div class="chart-card glass-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-pie"></i>
+                            Expense Category Breakdown
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                        <div class="chart-empty-state" id="categoryChartEmpty" style="display: none;">
+                            <i class="fas fa-chart-pie"></i>
+                            <p>No expenses recorded</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Savings Trend Chart -->
+            <div class="chart-card glass-card" style="margin-top: 2rem;">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-piggy-bank"></i>
+                        Monthly Savings Trend
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="savingsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/reports.js"></script>
+</body>
+</html>
