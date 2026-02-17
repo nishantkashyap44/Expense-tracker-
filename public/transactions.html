@@ -5,356 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transactions - Expense Tracker Pro</title>
     <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/transactions.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-        
-        .btn-add {
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #6366f1, #818cf8);
-            color: white;
-            border: none;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: transform 0.2s;
-        }
-        
-        .btn-add:hover {
-            transform: translateY(-2px);
-        }
-        
-        .filter-bar {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-        
-        .filter-group {
-            flex: 1;
-            min-width: 200px;
-        }
-        
-        .filter-group label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-        }
-        
-        .filter-group select,
-        .filter-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-size: 0.875rem;
-        }
-        
-        .transactions-table {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 1rem;
-            overflow: hidden;
-        }
-        
-        .table-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .table-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        
-        .table-info {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-        
-        .table-wrapper {
-            overflow-x: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        thead th {
-            padding: 1rem 1.5rem;
-            text-align: left;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            background: var(--bg-primary);
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        tbody tr {
-            border-bottom: 1px solid var(--border-color);
-            transition: background 0.2s;
-        }
-        
-        tbody tr:hover {
-            background: var(--bg-primary);
-        }
-        
-        tbody td {
-            padding: 1rem 1.5rem;
-            font-size: 0.875rem;
-            color: var(--text-primary);
-        }
-        
-        .type-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        
-        .type-badge.income {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success-color);
-        }
-        
-        .type-badge.expense {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger-color);
-        }
-        
-        .amount-cell {
-            font-weight: 700;
-            font-size: 1rem;
-        }
-        
-        .amount-cell.income {
-            color: var(--success-color);
-        }
-        
-        .amount-cell.expense {
-            color: var(--danger-color);
-        }
-        
-        .action-btn {
-            padding: 0.5rem;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            cursor: pointer;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
-        }
-        
-        .action-btn:hover {
-            background: var(--bg-primary);
-            color: var(--danger-color);
-        }
-        
-        /* Pagination Styles */
-        .pagination-container {
-            padding: 1.5rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .pagination-info {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-        
-        .pagination {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-        
-        .page-btn {
-            padding: 0.5rem 0.75rem;
-            border: 1px solid var(--border-color);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.2s;
-            min-width: 40px;
-            text-align: center;
-        }
-        
-        .page-btn:hover:not(:disabled) {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-        
-        .page-btn.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-        
-        .page-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .page-size-selector {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .page-size-selector select {
-            padding: 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            z-index: 10000;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-        
-        .modal.active {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: var(--bg-secondary);
-            border-radius: 1.5rem;
-            max-width: 500px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        .modal-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .modal-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-        
-        .modal-close {
-            width: 32px;
-            height: 32px;
-            border: none;
-            background: var(--bg-primary);
-            border-radius: 0.5rem;
-            cursor: pointer;
-        }
-        
-        .modal-body {
-            padding: 1.5rem;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-group label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--text-primary);
-        }
-        
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-        }
-        
-        .type-selector {
-            display: flex;
-            gap: 1rem;
-        }
-        
-        .type-option {
-            flex: 1;
-            padding: 1rem;
-            border: 2px solid var(--border-color);
-            border-radius: 0.75rem;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        
-        .type-option input {
-            display: none;
-        }
-        
-        .type-option.active {
-            border-color: var(--primary-color);
-            background: rgba(99, 102, 241, 0.1);
-        }
-        
-        .btn-submit {
-            width: 100%;
-            padding: 0.875rem;
-            background: linear-gradient(135deg, #6366f1, #818cf8);
-            color: white;
-            border: none;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-    </style>
 </head>
 <body>
     <div class="loading-overlay hidden" id="loadingOverlay">
@@ -383,7 +36,7 @@
             </ul>
             <div class="nav-divider"></div>
             <ul class="nav-list nav-bottom">
-                <li class="nav-item logout-item"><a href="#" class="nav-link" id="logoutBtn"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
+                <li class="nav-item logout-item"><a href="#" class="nav-link" id="logoutBtn" title="Logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
             </ul>
         </nav>
     </aside>
@@ -392,7 +45,7 @@
     <main class="main-content">
         <header class="top-navbar">
             <div class="navbar-left">
-                <button class="mobile-toggle-btn" id="mobileToggle"><i class="fas fa-bars"></i></button>
+                <button type="button" class="mobile-toggle-btn" id="mobileToggle" title="Toggle menu"><i class="fas fa-bars"></i></button>
                 <h1 class="page-title">Transactions</h1>
             </div>
             <div class="navbar-right">
@@ -405,9 +58,9 @@
 
         <div class="dashboard-container">
             <div class="page-header">
-                <div>
-                    <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">All Transactions</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem;">View and manage your income and expense transactions</p>
+                <div class="page-header-content">
+                    <h2 class="page-header-title">All Transactions</h2>
+                    <p class="page-header-subtitle">View and manage your income and expense transactions</p>
                 </div>
                 <button type="button" class="btn-add" id="addTransactionBtn">
                     <i class="fas fa-plus"></i> Add Transaction
@@ -417,7 +70,7 @@
             <div class="filter-bar">
                 <div class="filter-group">
                     <label>Type</label>
-                    <select id="filterType">
+                    <select id="filterType" title="Filter by transaction type">
                         <option value="">All Types</option>
                         <option value="income">Income</option>
                         <option value="expense">Expense</option>
@@ -425,17 +78,17 @@
                 </div>
                 <div class="filter-group">
                     <label>Category</label>
-                    <select id="filterCategory">
+                    <select id="filterCategory" title="Filter by category">
                         <option value="">All Categories</option>
                     </select>
                 </div>
                 <div class="filter-group">
                     <label>Date From</label>
-                    <input type="date" id="filterDateFrom">
+                    <input type="date" id="filterDateFrom" title="Filter from date">
                 </div>
                 <div class="filter-group">
                     <label>Date To</label>
-                    <input type="date" id="filterDateTo">
+                    <input type="date" id="filterDateTo" title="Filter to date">
                 </div>
             </div>
 
@@ -444,7 +97,7 @@
                     <h3 class="table-title">All Transactions</h3>
                     <div class="page-size-selector">
                         <label style="font-size: 0.875rem; color: var(--text-secondary);">Show:</label>
-                        <select id="pageSize">
+                        <select id="pageSize" title="Items per page">
                             <option value="10">10</option>
                             <option value="25" selected>25</option>
                             <option value="50">50</option>
@@ -465,7 +118,7 @@
                             </tr>
                         </thead>
                         <tbody id="transactionsTableBody">
-                            <tr><td colspan="6" style="text-align: center; padding: 3rem;"><div class="skeleton-loader"></div></td></tr>
+                            <tr><td colspan="6" class="table-loading"><div class="skeleton-loader" title="Loading"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -482,7 +135,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">Add New Transaction</h3>
-                <button type="button" class="modal-close" id="closeModal"><i class="fas fa-times"></i></button>
+                <button type="button" class="modal-close" id="closeModal" title="Close modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <form id="transactionForm">
@@ -513,7 +166,7 @@
                     </div>
                     <div class="form-group">
                         <label>Date</label>
-                        <input type="date" name="transaction_date" required>
+                        <input type="date" name="transaction_date" title="Transaction date" required>
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> Add Transaction</button>
                 </form>

@@ -9,8 +9,25 @@ function getEl(id) {
     return document.getElementById(id);
 }
 
+// Utility function to escape HTML to prevent XSS
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+    // Load theme on page load
+    loadTheme();
+    
+    // Setup theme toggle
+    const themeToggle = getEl('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+    
     Loading.show();
     
     try {
@@ -26,6 +43,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         Loading.hide();
     }
 });
+
+// Load theme from storage
+function loadTheme() {
+    const savedTheme = Storage.get('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        const icon = document.querySelector('#themeToggle i');
+        if (icon) icon.className = 'fas fa-sun';
+    }
+}
+
+// Toggle theme
+function toggleTheme() {
+    document.body.classList.toggle('dark-theme');
+    const isDark = document.body.classList.contains('dark-theme');
+    const icon = document.querySelector('#themeToggle i');
+    if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    Storage.set('theme', isDark ? 'dark' : 'light');
+}
 
 // Load user info
 async function loadUserInfo() {
@@ -116,7 +152,7 @@ function renderExpenses(expenses) {
     };
     
     grid.innerHTML = expenses.map(expense => {
-        const category = String(expense.category || 'Other');
+        const category = escapeHtml(String(expense.category || 'Other'));
         const total = Number(expense.total) || 0;
         const count = Number(expense.count) || 0;
         const avg = count > 0 ? total / count : 0;
@@ -189,24 +225,6 @@ function setupEventListeners() {
         });
     }
     
-    const themeToggle = getEl('themeToggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-theme');
-            const isDark = document.body.classList.contains('dark-theme');
-            const icon = document.querySelector('#themeToggle i');
-            if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-            Storage.set('theme', isDark ? 'dark' : 'light');
-        });
-    }
-    
-    // Load theme
-    if (Storage.get('theme') === 'dark') {
-        document.body.classList.add('dark-theme');
-        const icon = document.querySelector('#themeToggle i');
-        if (icon) icon.className = 'fas fa-sun';
-    }
-    
     const mobileToggle = getEl('mobileToggle');
     if (mobileToggle) {
         mobileToggle.addEventListener('click', () => {
@@ -262,15 +280,13 @@ async function handleAddExpense(e) {
         if (submitBtn) submitBtn.disabled = true;
         Loading.show();
         
-        await API.addExpense(data);
-        
-        await API.addWalletTransaction({
-            type: 'expense',
-            amount: data.amount,
-            category: data.category,
-            description: data.description,
-            transaction_date: new Date().toISOString().split('T')[0]
-        });
+     await API.addWalletTransaction({
+    type: 'expense',
+    amount: data.amount,
+    category: data.category,
+    description: data.description,
+    transaction_date: new Date().toISOString().split('T')[0]
+});
         
         Toast.success('Expense added successfully!');
         closeAddModal();
@@ -283,27 +299,3 @@ async function handleAddExpense(e) {
         Loading.hide();
     }
 }
-
-// ✅ Load theme on page load
-document.addEventListener('DOMContentLoaded', () => {
-    const savedTheme = Storage.get('theme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-        const icon = document.querySelector('#themeToggle i');
-        if (icon) icon.className = 'fas fa-sun';
-    }
-    
-    // Setup theme toggle
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-theme');
-            const isDark = document.body.classList.contains('dark-theme');
-            const icon = document.querySelector('#themeToggle i');
-            if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-            Storage.set('theme', isDark ? 'dark' : 'light');
-        });
-    }
-    
-    // ... rest of your code
-});

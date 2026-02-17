@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupEventListeners();
         console.log('Event listeners setup');
         
+        // Load theme on page load
+        loadTheme();
+        
         Toast.success('Reports loaded ✅');
     } catch (error) {
         console.error('Error in DOMContentLoaded:', error);
@@ -72,6 +75,7 @@ async function loadReports() {
             generateTrendChart();
             generateCategoryChart();
             generateSavingsChart();
+            hideEmptyStates();
         } else {
             showEmptyState();
         }
@@ -84,16 +88,37 @@ async function loadReports() {
 }
 
 function showEmptyState() {
-    document.getElementById('trendChartEmpty').style.display = 'flex';
-    document.getElementById('categoryChartEmpty').style.display = 'flex';
+    const trendEmpty = document.getElementById('trendChartEmpty');
+    const categoryEmpty = document.getElementById('categoryChartEmpty');
+    const savingsEmpty = document.getElementById('savingsChartEmpty');
+    
+    if (trendEmpty) trendEmpty.style.display = 'flex';
+    if (categoryEmpty) categoryEmpty.style.display = 'flex';
+    if (savingsEmpty) savingsEmpty.style.display = 'flex';
+}
+
+function hideEmptyStates() {
+    const trendEmpty = document.getElementById('trendChartEmpty');
+    const categoryEmpty = document.getElementById('categoryChartEmpty');
+    const savingsEmpty = document.getElementById('savingsChartEmpty');
+    
+    if (trendEmpty) trendEmpty.style.display = 'none';
+    if (categoryEmpty) categoryEmpty.style.display = 'none';
+    if (savingsEmpty) savingsEmpty.style.display = 'none';
 }
 
 // ✅ Calculate metrics
 function calculateMetrics() {
+    const incomeEl = document.getElementById('totalIncome6M');
+    const expenseEl = document.getElementById('totalExpense6M');
+    const savingsEl = document.getElementById('netSavings6M');
+    const rateEl = document.getElementById('savingsRate6M');
+    
     if (!allTransactions || allTransactions.length === 0) {
-        document.getElementById('totalIncome6M').textContent = '₹0';
-        document.getElementById('totalExpense6M').textContent = '₹0';
-        document.getElementById('netSavings6M').textContent = '₹0';
+        if (incomeEl) incomeEl.textContent = '₹0';
+        if (expenseEl) expenseEl.textContent = '₹0';
+        if (savingsEl) savingsEl.textContent = '₹0';
+        if (rateEl) rateEl.textContent = '0% rate';
         return;
     }
     
@@ -116,10 +141,10 @@ function calculateMetrics() {
     const netSavings = totalIncome - totalExpenses;
     const savingsRate = totalIncome > 0 ? Math.round((netSavings / totalIncome) * 100) : 0;
     
-    document.getElementById('totalIncome6M').textContent = '₹' + totalIncome.toLocaleString();
-    document.getElementById('totalExpense6M').textContent = '₹' + totalExpenses.toLocaleString();
-    document.getElementById('netSavings6M').textContent = '₹' + netSavings.toLocaleString();
-    document.getElementById('savingsRate6M').textContent = savingsRate + '% rate';
+    if (incomeEl) incomeEl.textContent = '₹' + totalIncome.toLocaleString();
+    if (expenseEl) expenseEl.textContent = '₹' + totalExpenses.toLocaleString();
+    if (savingsEl) savingsEl.textContent = '₹' + netSavings.toLocaleString();
+    if (rateEl) rateEl.textContent = savingsRate + '% rate';
 }
 
 // ✅ Monthly Trend Chart
@@ -151,12 +176,14 @@ function generateTrendChart() {
     const months = Object.keys(monthlyData).sort();
     const recentMonths = months.slice(-currentPeriod);
     
+    const trendEmpty = document.getElementById('trendChartEmpty');
+    
     if (recentMonths.length === 0) {
-        document.getElementById('trendChartEmpty').style.display = 'flex';
+        if (trendEmpty) trendEmpty.style.display = 'flex';
         return;
     }
     
-    document.getElementById('trendChartEmpty').style.display = 'none';
+    if (trendEmpty) trendEmpty.style.display = 'none';
     
     const income = recentMonths.map(m => monthlyData[m].income);
     const expenses = recentMonths.map(m => monthlyData[m].expense);
@@ -212,12 +239,14 @@ function generateCategoryChart() {
     
     const expenses = allTransactions.filter(t => t.type === 'expense');
     
+    const categoryEmpty = document.getElementById('categoryChartEmpty');
+    
     if (expenses.length === 0) {
-        document.getElementById('categoryChartEmpty').style.display = 'flex';
+        if (categoryEmpty) categoryEmpty.style.display = 'flex';
         return;
     }
     
-    document.getElementById('categoryChartEmpty').style.display = 'none';
+    if (categoryEmpty) categoryEmpty.style.display = 'none';
     
     const categoryData = {};
     expenses.forEach(exp => {
@@ -231,6 +260,9 @@ function generateCategoryChart() {
     const colors = ['#6366f1', '#ef4444', '#f59e0b', '#10b981', '#3b82f6',
                     '#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#06b6d4'];
     
+    // Get actual background color from CSS or use default
+    const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-secondary').trim() || '#1f2937';
+    
     if (window.Chart) {
         chartInstances.category = new Chart(canvas, {
             type: 'doughnut',
@@ -239,7 +271,7 @@ function generateCategoryChart() {
                 datasets: [{
                     data: amounts,
                     backgroundColor: colors.slice(0, categories.length),
-                    borderColor: 'var(--bg-secondary)',
+                    borderColor: bgColor,
                     borderWidth: 2
                 }]
             },
@@ -337,16 +369,6 @@ function setupEventListeners() {
             if (sidebar) sidebar.classList.toggle('active');
         });
     }
-}
-
-// ✅ Load theme on page load
-document.addEventListener('DOMContentLoaded', () => {
-    const savedTheme = Storage.get('theme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-        const icon = document.querySelector('#themeToggle i');
-        if (icon) icon.className = 'fas fa-sun';
-    }
     
     // Setup theme toggle
     const themeToggle = document.getElementById('themeToggle');
@@ -359,6 +381,14 @@ document.addEventListener('DOMContentLoaded', () => {
             Storage.set('theme', isDark ? 'dark' : 'light');
         });
     }
-    
-    // ... rest of your code
-});
+}
+
+// ✅ Load theme on page load
+function loadTheme() {
+    const savedTheme = Storage.get('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        const icon = document.querySelector('#themeToggle i');
+        if (icon) icon.className = 'fas fa-sun';
+    }
+}

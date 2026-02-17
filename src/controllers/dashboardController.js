@@ -24,13 +24,16 @@ exports.getDashboardSummary = asyncHandler(async (req, res) => {
   ] = await Promise.all([
 
     // Wallet balance
-    db.query(
-      `SELECT COALESCE(current_balance,0) as current_balance
-       FROM wallets
-       WHERE user_id = ?
-       LIMIT 1`,
-      [userId]
-    ),
+  // ✅ LIVE WALLET BALANCE
+db.query(
+  `SELECT 
+    COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END),0) -
+    COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END),0)
+    AS wallet_balance
+   FROM wallet_transactions
+   WHERE user_id = ?`,
+  [userId]
+),
 
     // Monthly income
     db.query(
@@ -82,7 +85,7 @@ exports.getDashboardSummary = asyncHandler(async (req, res) => {
     )
   ]);
 
-  const walletBalance = walletRows[0]?.current_balance || 0;
+  const walletBalance = walletRows[0]?.wallet_balance || 0;
   const totalIncome = incomeRows[0]?.total_income || 0;
   const totalExpense = expenseRows[0]?.total_expense || 0;
 

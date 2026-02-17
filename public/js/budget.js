@@ -3,9 +3,24 @@ const currentDate = new Date();
 const currentMonth = currentDate.getMonth() + 1;
 const currentYear = currentDate.getFullYear();
 
+// Helper function to escape HTML and prevent XSS
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     Loading.show();
     try {
+        // Load theme first
+        loadTheme();
+        
+        // Setup theme toggle
+        setupThemeToggle();
+        
+        // Load user info and budgets
         await loadUserInfo();
         await loadBudgets();
         setupEventListeners();
@@ -18,11 +33,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// ✅ Load theme on page load
+function loadTheme() {
+    const savedTheme = Storage.get('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        const icon = document.querySelector('#themeToggle i');
+        if (icon) icon.className = 'fas fa-sun';
+    }
+}
+
+// ✅ Setup theme toggle
+function setupThemeToggle() {
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            const icon = document.querySelector('#themeToggle i');
+            if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+            Storage.set('theme', isDark ? 'dark' : 'light');
+        });
+    }
+}
+
 async function loadUserInfo() {
     let user = Storage.get('user');
     try {
         if (typeof user === 'string') user = JSON.parse(user);
-    } catch (e) {}
+    } catch (e) {
+        console.warn('Failed to parse user data:', e);
+        user = null;
+    }
     if (user) {
         const nameEl = document.getElementById('userName');
         const initialsEl = document.getElementById('userInitials');
@@ -82,9 +124,12 @@ async function loadBudgets() {
 // ✅ Calculate summary stats
 function calculateSummary() {
     if (!allBudgets || allBudgets.length === 0) {
-        document.getElementById('totalBudget').textContent = '₹0';
-        document.getElementById('totalSpent').textContent = '₹0';
-        document.getElementById('remaining').textContent = '₹0';
+        const totalBudgetEl = document.getElementById('totalBudget');
+        const totalSpentEl = document.getElementById('totalSpent');
+        const remainingEl = document.getElementById('remaining');
+        if (totalBudgetEl) totalBudgetEl.textContent = '₹0';
+        if (totalSpentEl) totalSpentEl.textContent = '₹0';
+        if (remainingEl) remainingEl.textContent = '₹0';
         return;
     }
 
@@ -93,11 +138,17 @@ function calculateSummary() {
     const remaining = totalBudget - totalSpent;
     const percentage = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
 
-    document.getElementById('totalBudget').textContent = '₹' + totalBudget.toLocaleString();
-    document.getElementById('totalSpent').textContent = '₹' + totalSpent.toLocaleString();
-    document.getElementById('remaining').textContent = '₹' + remaining.toLocaleString();
-    document.getElementById('spentPercentage').textContent = percentage + '% used';
-    document.getElementById('remainingPercentage').textContent = (100 - percentage) + '% available';
+    const totalBudgetEl = document.getElementById('totalBudget');
+    const totalSpentEl = document.getElementById('totalSpent');
+    const remainingEl = document.getElementById('remaining');
+    const spentPercentageEl = document.getElementById('spentPercentage');
+    const remainingPercentageEl = document.getElementById('remainingPercentage');
+
+    if (totalBudgetEl) totalBudgetEl.textContent = '₹' + totalBudget.toLocaleString();
+    if (totalSpentEl) totalSpentEl.textContent = '₹' + totalSpent.toLocaleString();
+    if (remainingEl) remainingEl.textContent = '₹' + remaining.toLocaleString();
+    if (spentPercentageEl) spentPercentageEl.textContent = percentage + '% used';
+    if (remainingPercentageEl) remainingPercentageEl.textContent = (100 - percentage) + '% available';
 }
 
 // ✅ Render budget cards
@@ -127,11 +178,14 @@ function renderBudgets(budgets) {
             badgeClass = 'warning';
         }
 
+        // Escape HTML to prevent XSS
+        const safeCategory = escapeHtml(budget.category);
+
         return `
             <div class="budget-card">
                 <div class="budget-header">
                     <div class="budget-info">
-                        <div class="budget-category">${budget.category}</div>
+                        <div class="budget-category">${safeCategory}</div>
                         <div class="budget-subtitle">Month: ${currentMonth}/${currentYear}</div>
                     </div>
                     <div class="budget-amounts">
@@ -231,48 +285,7 @@ function closeAddModal() {
     if (form) form.reset();
 }
 
-// ✅ Handle add budget
-async function handleAddBudget(e) {
-    e.preventDefault();
-    const form = e.target;
-    const submitBtn = form.querySelector('button[type="submit"]');
-    
-    const formData = new FormData(form);
-    const category = formData.get('category') || '';
-    const amount = parseFloat(formData.get('amount'));
-    const month = parseInt(formData.get('month')) || currentMonth;
-    const year = parseInt(formData.get('year')) || currentYear;
-    
-    if (!category || !amount || amount <= 0) {
-        Toast.error('Please fill all required fields');
-        return;
-    }
-    
-    const data = {
-        category: category.trim(),
-        amount: amount,
-        month: month,
-        year: year
-    };
-    
-    try {
-        if (submitBtn) submitBtn.disabled = true;
-        Loading.show();
-        
-        await API.addBudget(data);
-        
-        Toast.success('Budget created successfully!');
-        closeAddModal();
-        form.reset();
-        await loadBudgets();
-    } catch (error) {
-        console.error('Error adding budget:', error);
-        Toast.error(error.message || 'Failed to create budget');
-    } finally {
-        if (submitBtn) submitBtn.disabled = false;
-        Loading.hide();
-    }
-}// ✅ Handle add budget with better error handling
+// ✅ Handle add budget with proper error handling
 async function handleAddBudget(e) {
     e.preventDefault();
     const form = e.target;
@@ -303,50 +316,25 @@ async function handleAddBudget(e) {
         console.log('Adding budget:', data);
         await API.addBudget(data);
         
-        Loading.hide();
-        Toast.success('Budget created successfully! ✅');
+        Toast.success('Budget created successfully!');
         closeAddModal();
         form.reset();
         await loadBudgets();
         
     } catch (error) {
-        Loading.hide();
-        console.error('Full error object:', error);
+        console.error('Error adding budget:', error);
         
-        // ✅ Extract error message properly
+        // Extract error message properly
         let errorMessage = 'Failed to create budget';
         
         if (error.message) {
             errorMessage = error.message;
         }
         
-        // Show error as Toast notification (visible on page)
         Toast.error(errorMessage);
         
     } finally {
         if (submitBtn) submitBtn.disabled = false;
+        Loading.hide();
     }
 }
-// ✅ Load theme on page load
-document.addEventListener('DOMContentLoaded', () => {
-    const savedTheme = Storage.get('theme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-        const icon = document.querySelector('#themeToggle i');
-        if (icon) icon.className = 'fas fa-sun';
-    }
-    
-    // Setup theme toggle
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-theme');
-            const isDark = document.body.classList.contains('dark-theme');
-            const icon = document.querySelector('#themeToggle i');
-            if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-            Storage.set('theme', isDark ? 'dark' : 'light');
-        });
-    }
-    
-    // ... rest of your code
-});

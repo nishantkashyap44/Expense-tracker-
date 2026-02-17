@@ -1,5 +1,5 @@
-// ===== Dashboard State =====
-const DashboardState = {
+// ===== Dashboard Default State =====
+const DEFAULT_DASHBOARD_STATE = {
   currentMonth: new Date().getMonth() + 1,
   currentYear: new Date().getFullYear(),
   charts: {
@@ -14,10 +14,18 @@ const DashboardState = {
   }
 };
 
+// ===== HTML Sanitization Helper =====
+function sanitizeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 // ===== Dashboard Initialization =====
 class Dashboard {
   constructor() {
-    this.state = DashboardState;
+    // Create a deep copy of the default state for each instance
+    this.state = JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_STATE));
     this.init();
   }
   
@@ -66,17 +74,14 @@ class Dashboard {
       });
     }
     
-    // ✅ FIXED: Theme toggle - Use arrow function to preserve 'this'
+    // Theme toggle - Use arrow function to preserve 'this'
     const themeToggle = document.getElementById('themeToggle');
     if (themeToggle) {
       themeToggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('Theme toggle clicked');
         this.toggleTheme();
       });
-    } else {
-      console.warn('Theme toggle button not found');
     }
     
     // Mobile menu toggle
@@ -195,23 +200,26 @@ class Dashboard {
   }
   
   updateSummaryCards(data) {
+    // Guard clause for null/undefined data
+    if (!data) return;
+    
     // Wallet Balance
-    this.animateValue('walletBalance', 0, data.wallet_balance, 1000, true);
+    this.animateValue('walletBalance', 0, data.wallet_balance || 0, 1000, true);
     
     // Monthly Income
-    this.animateValue('monthlyIncome', 0, data.total_income, 1000, true);
+    this.animateValue('monthlyIncome', 0, data.total_income || 0, 1000, true);
     
     // Monthly Expense
-    this.animateValue('monthlyExpense', 0, data.total_expense, 1000, true);
+    this.animateValue('monthlyExpense', 0, data.total_expense || 0, 1000, true);
     
-    // ✅ FIXED: Monthly Savings - Calculate correctly
+    // Monthly Savings - Calculate correctly
     const totalIncome = Number(data.total_income || 0);
     const totalExpenses = Number(data.total_expense || 0);
     const correctSavings = totalIncome - totalExpenses;
     
     this.animateValue('monthlySavings', 0, correctSavings, 1000, true);
     
-    // ✅ FIXED: Color the savings red if negative
+    // Color the savings red if negative
     const savingsElement = document.getElementById('monthlySavings');
     if (savingsElement) {
         if (correctSavings < 0) {
@@ -240,11 +248,11 @@ class Dashboard {
     const expenseChange = document.getElementById('expenseChange');
     
     if (incomeChange && data.transactions) {
-        incomeChange.textContent = `${data.transactions.income_count} transactions`;
+        incomeChange.textContent = `${data.transactions.income_count || 0} transactions`;
     }
     
     if (expenseChange && data.transactions) {
-        expenseChange.textContent = `${data.transactions.expense_count} transactions`;
+        expenseChange.textContent = `${data.transactions.expense_count || 0} transactions`;
     }
   }
 
@@ -261,12 +269,34 @@ class Dashboard {
     
     const range = end - start;
     const steps = Math.max(Math.round(duration / 16), 1);
+    
+    // Guard against infinite animation
+    if (steps === 0 || range === 0) {
+      if (isCurrency) {
+        const absValue = Math.abs(end);
+        const sign = end < 0 ? '-' : '';
+        element.textContent = sign + Format.currency(absValue);
+      } else {
+        element.textContent = Format.number(Math.round(end));
+      }
+      return;
+    }
+    
     const increment = range / steps;
     let current = start;
+    let stepCount = 0;
+    const maxSteps = steps + 10; // Safety limit
     
     const timer = setInterval(() => {
+        stepCount++;
         current += increment;
-        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+        
+        // Check if animation should end
+        const shouldEnd = (increment > 0 && current >= end) || 
+                         (increment < 0 && current <= end) ||
+                         stepCount >= maxSteps;
+        
+        if (shouldEnd) {
             current = end;
             clearInterval(timer);
         }
@@ -311,11 +341,11 @@ class Dashboard {
     container.innerHTML = transactions.map(transaction => `
       <div class="transaction-item">
         <div class="transaction-icon ${transaction.type}">
-          <i class="fas ${transaction.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'}"></i>
+          <i class="fas ${transaction.type === 'income' ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
         </div>
         <div class="transaction-details">
-          <div class="transaction-category">${transaction.category || 'Uncategorized'}</div>
-          <div class="transaction-description">${transaction.description || 'No description'}</div>
+          <div class="transaction-category">${sanitizeHTML(transaction.category || 'Uncategorized')}</div>
+          <div class="transaction-description">${sanitizeHTML(transaction.description || 'No description')}</div>
         </div>
         <div class="transaction-date">${Format.relativeTime(transaction.transaction_date)}</div>
         <div class="transaction-amount ${transaction.type}">
@@ -370,8 +400,8 @@ class Dashboard {
       return `
         <div class="budget-item">
           <div class="budget-header">
-            <div class="budget-category">${budget.category}</div>
-            <div class="budget-amount">${Format.currency(budget.actual_spent)} / ${Format.currency(budget.budget_amount)}</div>
+            <div class="budget-category">${sanitizeHTML(budget.category || 'Unknown')}</div>
+            <div class="budget-amount">${Format.currency(budget.actual_spent || 0)} / ${Format.currency(budget.budget_amount || 0)}</div>
           </div>
           <div class="budget-progress-bar">
             <div class="budget-progress-fill ${progressClass}" style="width: ${Math.min(percentage, 100)}%"></div>
@@ -379,7 +409,7 @@ class Dashboard {
           <div class="budget-stats">
             <span class="budget-spent">${percentage.toFixed(1)}% used</span>
             <span class="budget-remaining ${remainingClass}">
-              ${Format.currency(Math.abs(budget.remaining))} ${budget.remaining >= 0 ? 'left' : 'over'}
+              ${Format.currency(Math.abs(budget.remaining || 0))} ${(budget.remaining || 0) >= 0 ? 'left' : 'over'}
             </span>
           </div>
         </div>
@@ -442,7 +472,7 @@ class Dashboard {
             },
             tooltip: {
               callbacks: {
-                label: function(context) {
+                label: (context) => {
                   return context.dataset.label + ': ' + Format.currency(context.parsed.y);
                 }
               }
@@ -452,7 +482,7 @@ class Dashboard {
             y: {
               beginAtZero: true,
               ticks: {
-                callback: function(value) {
+                callback: (value) => {
                   return Format.currency(value);
                 }
               }
@@ -488,7 +518,7 @@ class Dashboard {
             },
             tooltip: {
               callbacks: {
-                label: function(context) {
+                label: (context) => {
                   const label = context.label || '';
                   const value = Format.currency(context.parsed);
                   const total = context.dataset.data.reduce((a, b) => a + b, 0);
@@ -502,11 +532,12 @@ class Dashboard {
       });
     }
 
-    if (this.state.data.trend) {
+    // Update charts with data if already loaded
+    if (this.state.data.trend && this.state.data.trend.length > 0) {
       this.updateTrendChart(this.state.data.trend);
     }
 
-    if (this.state.data.summary && this.state.data.summary.top_categories) {
+    if (this.state.data.summary && this.state.data.summary.top_categories && this.state.data.summary.top_categories.length > 0) {
       this.updateCategoryChart(this.state.data.summary.top_categories);
     }
   }
@@ -567,45 +598,36 @@ class Dashboard {
   
   // ===== Theme Management =====
   toggleTheme() {
-    console.log('toggleTheme() called');
     const body = document.body;
-    const themeIcon = document.querySelector('#themeToggle i');
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = themeToggle ? themeToggle.querySelector('i') : null;
     
-    console.log('Current classes:', body.className);
     body.classList.toggle('dark-theme');
     const isDark = body.classList.contains('dark-theme');
     
-    console.log('After toggle:', body.className);
-    console.log('Is dark now:', isDark);
-    
     if (themeIcon) {
       themeIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-      console.log('Icon updated to:', themeIcon.className);
     }
     
     Storage.set('theme', isDark ? 'dark' : 'light');
-    console.log('Theme saved:', isDark ? 'dark' : 'light');
   }
   
   loadTheme() {
     const savedTheme = Storage.get('theme');
     const body = document.body;
-    const themeIcon = document.querySelector('#themeToggle i');
-    
-    console.log('loadTheme() - Saved theme:', savedTheme);
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = themeToggle ? themeToggle.querySelector('i') : null;
     
     if (savedTheme === 'dark') {
       body.classList.add('dark-theme');
       if (themeIcon) {
         themeIcon.className = 'fas fa-sun';
       }
-      console.log('Dark theme applied');
     } else {
       body.classList.remove('dark-theme');
       if (themeIcon) {
         themeIcon.className = 'fas fa-moon';
       }
-      console.log('Light theme applied');
     }
   }
   
@@ -616,11 +638,13 @@ class Dashboard {
       return;
     }
     
+    const searchStr = query.toLowerCase().trim();
+    
     const filtered = (this.state.data.transactions || []).filter(transaction => {
-      const searchStr = query.toLowerCase();
       return (
         (transaction.category && transaction.category.toLowerCase().includes(searchStr)) ||
-        (transaction.description && transaction.description.toLowerCase().includes(searchStr))
+        (transaction.description && transaction.description.toLowerCase().includes(searchStr)) ||
+        (transaction.amount && transaction.amount.toString().includes(searchStr))
       );
     });
     
@@ -629,12 +653,44 @@ class Dashboard {
   
   // ===== Handle Logout =====
   handleLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-      Toast.info('Logging out...');
-      setTimeout(() => {
+    // Use a custom modal or Toast confirmation instead of browser confirm
+    Toast.info('Logging out...');
+    
+    // Small delay for UX
+    setTimeout(() => {
+      try {
         API.logout();
-      }, 1000);
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+      
+      // Clear local storage
+      Storage.clear();
+      
+      // Redirect to login page
+      window.location.href = '/login.html';
+    }, 500);
+  }
+  
+  // ===== Cleanup =====
+  destroy() {
+    // Destroy charts to prevent memory leaks
+    if (this.state.charts.trend) {
+      this.state.charts.trend.destroy();
+      this.state.charts.trend = null;
     }
+    if (this.state.charts.category) {
+      this.state.charts.category.destroy();
+      this.state.charts.category = null;
+    }
+    
+    // Clear data
+    this.state.data = {
+      summary: null,
+      transactions: null,
+      budget: null,
+      trend: null
+    };
   }
 }
 
@@ -647,4 +703,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   new Dashboard();
-});
+}); 

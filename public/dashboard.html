@@ -6,10 +6,8 @@
     <title>Expense Tracker Pro - Dashboard</title>
     <link rel="stylesheet" href="/css/dashboard.css">
     
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -233,7 +231,7 @@
                         <div class="chart-container">
                             <canvas id="trendChart"></canvas>
                         </div>
-                        <div class="chart-empty-state" id="trendChartEmpty" style="display: none;">
+                        <div class="chart-empty-state" id="trendChartEmpty">
                             <i class="fas fa-chart-line"></i>
                             <p>No data available for the selected period</p>
                         </div>
@@ -257,7 +255,7 @@
                         <div class="chart-container">
                             <canvas id="categoryChart"></canvas>
                         </div>
-                        <div class="chart-empty-state" id="categoryChartEmpty" style="display: none;">
+                        <div class="chart-empty-state" id="categoryChartEmpty">
                             <i class="fas fa-chart-pie"></i>
                             <p>No expenses recorded this month</p>
                         </div>
@@ -290,7 +288,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="empty-state" id="transactionsEmpty" style="display: none;">
+                        <div class="empty-state" id="transactionsEmpty">
                             <i class="fas fa-inbox"></i>
                             <p>No recent transactions</p>
                             <button type="button" class="btn-primary">Add Transaction</button>
@@ -320,7 +318,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="empty-state" id="budgetEmpty" style="display: none;">
+                        <div class="empty-state" id="budgetEmpty">
                             <i class="fas fa-chart-pie"></i>
                             <p>No budgets set for this month</p>
                             <button type="button" class="btn-primary">Create Budget</button>

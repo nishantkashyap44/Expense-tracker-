@@ -45,11 +45,10 @@
     <main class="main-content">
         <header class="top-navbar">
             <div class="navbar-left">
-                <button class="mobile-toggle-btn" id="mobileToggle"><i class="fas fa-bars"></i></button>
+                <button type="button" class="mobile-toggle-btn" id="mobileToggle" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
                 <h1 class="page-title">Financial Reports</h1>
             </div>
             <div class="navbar-right">
-                <button class="icon-btn theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
                 <div class="user-profile">
                     <div class="user-avatar"><span id="userInitials">U</span></div>
                     <div class="user-info"><span class="user-name" id="userName">User</span></div>
@@ -98,7 +97,7 @@
                             Monthly Income vs Expenses Trend
                         </h3>
                         <div class="card-actions">
-                            <select class="period-selector" id="trendPeriod">
+                            <select class="period-selector" id="trendPeriod" title="Select time period">
                                 <option value="6">Last 6 Months</option>
                                 <option value="12">Last 12 Months</option>
                             </select>
@@ -108,7 +107,7 @@
                         <div class="chart-container">
                             <canvas id="trendChart"></canvas>
                         </div>
-                        <div class="chart-empty-state" id="trendChartEmpty" style="display: none;">
+                        <div class="chart-empty-state hidden" id="trendChartEmpty">
                             <i class="fas fa-chart-line"></i>
                             <p>No data available</p>
                         </div>
@@ -127,7 +126,7 @@
                         <div class="chart-container">
                             <canvas id="categoryChart"></canvas>
                         </div>
-                        <div class="chart-empty-state" id="categoryChartEmpty" style="display: none;">
+                        <div class="chart-empty-state hidden" id="categoryChartEmpty">
                             <i class="fas fa-chart-pie"></i>
                             <p>No expenses recorded</p>
                         </div>
@@ -136,7 +135,7 @@
             </div>
 
             <!-- Savings Trend Chart -->
-            <div class="chart-card glass-card" style="margin-top: 2rem;">
+            <div class="chart-card glass-card chart-card-wide">
                 <div class="card-header">
                     <h3 class="card-title">
                         <i class="fas fa-piggy-bank"></i>

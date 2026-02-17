@@ -8,6 +8,34 @@ let currentPage = 1;
 let itemsPerPage = 25;
 let deleteListenerAdded = false; // ✅ Duplicate listener prevent
 
+// ============================================
+// ✅ HTML ESCAPE FUNCTION - PREVENT XSS
+// ============================================
+function escapeHtml(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+// ============================================
+// ✅ SAFE DATE PARSING
+// ============================================
+function safeParseDate(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    return d;
+}
+
+// ============================================
+// ✅ SAFE NUMBER PARSING
+// ============================================
+function safeParseAmount(value) {
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     loadTheme();
     loadUserInfo();
@@ -148,25 +176,26 @@ function renderTransactions(data) {
         html += `
             <tr style="background:var(--bg-primary);border-top:2px solid var(--border-color);">
                 <td colspan="6" style="padding:0.6rem 1.5rem;font-weight:600;color:var(--text-secondary);font-size:0.85rem;">
-                    📅 ${date}
+                    📅 ${escapeHtml(date)}
                 </td>
             </tr>`;
 
         txns.forEach(t => {
-            const sign = t.type === 'income' ? '+' : '-';
-            const amt = Number(t.amount).toLocaleString('en-IN');
+            const safeType = t.type || 'expense';
+            const sign = safeType === 'income' ? '+' : '-';
+            const amt = safeParseAmount(t.amount).toLocaleString('en-IN');
             html += `
                 <tr>
                     <td>${formatDateOnly(t.transaction_date)}</td>
                     <td>
-                        <span class="type-badge ${t.type}">
-                            <i class="fas fa-arrow-${t.type === 'income' ? 'down' : 'up'}"></i>
-                            ${t.type.charAt(0).toUpperCase() + t.type.slice(1)}
+                        <span class="type-badge ${escapeHtml(safeType)}">
+                            <i class="fas fa-arrow-${safeType === 'income' ? 'down' : 'up'}"></i>
+                            ${escapeHtml(safeType.charAt(0).toUpperCase() + safeType.slice(1))}
                         </span>
                     </td>
-                    <td>${t.category || '-'}</td>
-                    <td>${t.description || '-'}</td>
-                    <td class="amount-cell ${t.type}">${sign}₹${amt}</td>
+                    <td>${escapeHtml(t.category) || '-'}</td>
+                    <td>${escapeHtml(t.description) || '-'}</td>
+                    <td class="amount-cell ${escapeHtml(safeType)}">${sign}₹${amt}</td>
                     <td>
                         <button class="action-btn" data-id="${t.id}" type="button" title="Delete">
                             <i class="fas fa-trash"></i>
@@ -255,7 +284,9 @@ function setupFilterListeners() {
         const to = filterDateTo?.value || '';
 
         filteredTransactions = allTransactions.filter(t => {
-            const d = new Date(t.transaction_date).toISOString().split('T')[0];
+            const parsedDate = safeParseDate(t.transaction_date);
+            if (!parsedDate) return false; // Skip invalid dates
+            const d = parsedDate.toISOString().split('T')[0];
             return (
                 (!typeVal || t.type === typeVal) &&
                 (!catVal || t.category === catVal) &&
@@ -349,7 +380,8 @@ function setupForm() {
             Toast.success("✅ Transaction added!");
             document.getElementById("addTransactionModal").classList.remove("active");
             form.reset();
-            document.querySelector('input[name="transaction_date"]').valueAsDate = new Date();
+            const dateInput = document.querySelector('input[name="transaction_date"]');
+            if (dateInput) dateInput.valueAsDate = new Date();
             currentPage = 1;
             await loadTransactions();
             Loading.hide();

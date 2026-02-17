@@ -75,6 +75,218 @@ body.dark-theme {
   --border-color: #334155;
 }
 
+/* Stat Card Icon Variants */
+.stat-icon.stat-warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1));
+    color: var(--warning-color);
+}
+
+.stat-icon.stat-info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(96, 165, 250, 0.1));
+    color: var(--info-color);
+}
+
+/* Skeleton Loader Variants */
+.skeleton-loader.skeleton-card {
+    height: 200px;
+}
+
+/* Stat Value Variants */
+.stat-value-lg {
+    font-size: 1.5rem;
+}
+
+/* ===== Expense Page Styles ===== */
+.expense-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.expense-card {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition: transform 0.2s;
+}
+
+.expense-card:hover {
+    transform: translateY(-4px);
+}
+
+.expense-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.expense-category {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.expense-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(248, 113, 113, 0.1));
+    color: var(--danger-color);
+    font-size: 1.25rem;
+}
+
+.expense-amount {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--danger-color);
+    margin: 0.5rem 0;
+}
+
+.expense-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.expense-detail {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+}
+
+.expense-label {
+    color: var(--text-secondary);
+}
+
+.expense-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Add Expense Button */
+.btn-add-expense {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+    transition: transform 0.2s;
+    z-index: 100;
+}
+
+.btn-add-expense:hover {
+    transform: scale(1.1);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 1.5rem;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.modal-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--bg-primary);
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 0.875rem;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 /* ===== Reset & Base Styles ===== */
 * {
   margin: 0;
@@ -96,6 +308,19 @@ body {
   transition: background-color var(--transition-normal);
 }
 
+/* ===== Utility Classes ===== */
+.hidden {
+  display: none !important;
+}
+
+.chart-card-wide {
+  margin-top: 2rem;
+}
+
+.visible {
+  display: block !important;
+}
+
 /* ===== Loading Overlay ===== */
 .loading-overlay {
   position: fixed;
@@ -104,6 +329,7 @@ body {
   right: 0;
   bottom: 0;
   background: rgba(15, 23, 42, 0.9);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
@@ -372,6 +598,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   background: var(--glass-bg);
 }
@@ -552,6 +779,7 @@ body {
 
 .glass-card {
   background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-md);
