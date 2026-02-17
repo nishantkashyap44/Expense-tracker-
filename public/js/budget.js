@@ -1,155 +1,168 @@
-// Budget Page - Complete Working Code with API (fixed: safer element access, numeric fallbacks)
-
-let budgetData = [];
+let allBudgets = [];
 const currentDate = new Date();
 const currentMonth = currentDate.getMonth() + 1;
 const currentYear = currentDate.getFullYear();
 
-// helper to safely get element
-const $ = (id) => document.getElementById(id);
-
-// Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-    if (typeof Loading !== 'undefined') Loading.show();
-    
+    Loading.show();
     try {
         await loadUserInfo();
-        await loadBudgetData();
+        await loadBudgets();
         setupEventListeners();
-        
-        if (typeof Loading !== 'undefined') Loading.hide();
-        if (typeof Toast !== 'undefined') Toast.success('Budgets loaded successfully');
+        Toast.success('Budgets loaded');
     } catch (error) {
-        if (typeof Loading !== 'undefined') Loading.hide();
         console.error('Error:', error);
-        if (typeof Toast !== 'undefined') Toast.error('Failed to load budgets');
+        Toast.error('Failed to load budgets');
+    } finally {
+        Loading.hide();
     }
 });
 
-// Load user info
 async function loadUserInfo() {
-    const user = (typeof Storage !== 'undefined') ? Storage.get('user') : null;
-    if (!user) return;
-    const userNameEl = $('userName');
-    const userInitialsEl = $('userInitials');
-    if (userNameEl) userNameEl.textContent = user.name || '';
-    if (userInitialsEl) {
-        const initials = (user.name || '').split(' ').map(n => n[0] || '').join('').toUpperCase().substring(0, 2);
-        userInitialsEl.textContent = initials;
+    let user = Storage.get('user');
+    try {
+        if (typeof user === 'string') user = JSON.parse(user);
+    } catch (e) {}
+    if (user) {
+        const nameEl = document.getElementById('userName');
+        const initialsEl = document.getElementById('userInitials');
+        if (nameEl) nameEl.textContent = user.name || '';
+        if (initialsEl) {
+            const initials = (user.name || '')
+                .split(' ')
+                .map(n => n[0] || '')
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
+            initialsEl.textContent = initials;
+        }
     }
 }
 
-// Load budget data from API
-async function loadBudgetData() {
+// ✅ Load budgets from API with spent amounts calculated from expenses
+async function loadBudgets() {
     try {
-        const response = await API.getBudgetComparison(currentMonth, currentYear);
+        const budgetResponse = await API.getBudgets(currentMonth, currentYear);
+        const expenseResponse = await API.getExpenses(currentMonth, currentYear);
         
-        if (response && response.status === 'success' && response.data) {
-            budgetData = Array.isArray(response.data.comparison) ? response.data.comparison : [];
+        if (budgetResponse && budgetResponse.status === 'success' && budgetResponse.data) {
+            allBudgets = Array.isArray(budgetResponse.data) ? budgetResponse.data : [];
             
-            // Calculate totals with numeric fallbacks
-            const totalBudget = budgetData.reduce((sum, b) => sum + (parseFloat(b.budget_amount) || 0), 0);
-            const totalSpent = budgetData.reduce((sum, b) => sum + (parseFloat(b.actual_spent) || 0), 0);
-            const remaining = totalBudget - totalSpent;
-            const spentPercentage = totalBudget > 0 ? ((totalSpent / totalBudget) * 100).toFixed(1) : '0.0';
+            // ✅ Calculate spent amount from expenses
+            if (expenseResponse && expenseResponse.status === 'success' && expenseResponse.data) {
+                const expenses = Array.isArray(expenseResponse.data) ? expenseResponse.data : [];
+                
+                // Sum expenses by category
+                const spentByCategory = {};
+                expenses.forEach(exp => {
+                    const cat = exp.category || 'Other';
+                    spentByCategory[cat] = (spentByCategory[cat] || 0) + Number(exp.amount || 0);
+                });
+                
+                // Update budgets with spent amounts
+                allBudgets = allBudgets.map(budget => ({
+                    ...budget,
+                    spent: spentByCategory[budget.category] || 0
+                }));
+            }
             
-            // Update summary cards (guard elements)
-            const totalBudgetEl = $('totalBudget');
-            const totalSpentEl = $('totalSpent');
-            const remainingEl = $('remaining');
-            const spentPercentageEl = $('spentPercentage');
-            const remainingPercentageEl = $('remainingPercentage');
-            
-            if (totalBudgetEl) totalBudgetEl.textContent = typeof Format !== 'undefined' ? Format.currency(totalBudget) : totalBudget.toFixed(2);
-            if (totalSpentEl) totalSpentEl.textContent = typeof Format !== 'undefined' ? Format.currency(totalSpent) : totalSpent.toFixed(2);
-            if (remainingEl) remainingEl.textContent = typeof Format !== 'undefined' ? Format.currency(remaining) : remaining.toFixed(2);
-            if (spentPercentageEl) spentPercentageEl.textContent = `${spentPercentage}% used`;
-            if (remainingPercentageEl) remainingPercentageEl.textContent = remaining >= 0 ? 'Available' : 'Over budget';
-            
-            // Render budget cards
-            renderBudgets(budgetData);
+            calculateSummary();
+            renderBudgets(allBudgets);
         } else {
+            allBudgets = [];
             showEmptyState();
         }
     } catch (error) {
         console.error('Error loading budgets:', error);
+        allBudgets = [];
         showEmptyState();
     }
 }
 
-// Render budget cards with progress bars
+// ✅ Calculate summary stats
+function calculateSummary() {
+    if (!allBudgets || allBudgets.length === 0) {
+        document.getElementById('totalBudget').textContent = '₹0';
+        document.getElementById('totalSpent').textContent = '₹0';
+        document.getElementById('remaining').textContent = '₹0';
+        return;
+    }
+
+    const totalBudget = allBudgets.reduce((sum, b) => sum + Number(b.amount || 0), 0);
+    const totalSpent = allBudgets.reduce((sum, b) => sum + Number(b.spent || 0), 0);
+    const remaining = totalBudget - totalSpent;
+    const percentage = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+
+    document.getElementById('totalBudget').textContent = '₹' + totalBudget.toLocaleString();
+    document.getElementById('totalSpent').textContent = '₹' + totalSpent.toLocaleString();
+    document.getElementById('remaining').textContent = '₹' + remaining.toLocaleString();
+    document.getElementById('spentPercentage').textContent = percentage + '% used';
+    document.getElementById('remainingPercentage').textContent = (100 - percentage) + '% available';
+}
+
+// ✅ Render budget cards
 function renderBudgets(budgets) {
-    const list = $('budgetList');
-    if (!list) return;
-    
+    const budgetList = document.getElementById('budgetList');
+    if (!budgetList) return;
+
     if (!budgets || budgets.length === 0) {
         showEmptyState();
         return;
     }
-    
-    list.innerHTML = budgets.map(budget => {
-        const percentage = parseFloat(budget.percentage_used) || 0;
-        const remaining = parseFloat(budget.remaining) || 0;
-        
-        // Determine color class
+
+    budgetList.innerHTML = budgets.map(budget => {
+        const amount = Number(budget.amount || 0);
+        const spent = Number(budget.spent || 0);
+        const remaining = amount - spent;
+        const percentage = amount > 0 ? Math.round((spent / amount) * 100) : 0;
+
         let progressClass = 'success';
         let badgeClass = 'success';
-        let badgeIcon = 'fa-check-circle';
-        
+
         if (percentage >= 100) {
             progressClass = 'danger';
             badgeClass = 'danger';
-            badgeIcon = 'fa-exclamation-circle';
         } else if (percentage >= 80) {
             progressClass = 'warning';
             badgeClass = 'warning';
-            badgeIcon = 'fa-exclamation-triangle';
         }
-        
-        const spentText = (typeof Format !== 'undefined') ? Format.currency(parseFloat(budget.actual_spent) || 0) : (parseFloat(budget.actual_spent) || 0).toFixed(2);
-        const totalText = (typeof Format !== 'undefined') ? Format.currency(parseFloat(budget.budget_amount) || 0) : (parseFloat(budget.budget_amount) || 0).toFixed(2);
-        const remainingText = remaining >= 0
-            ? ((typeof Format !== 'undefined') ? Format.currency(remaining) : remaining.toFixed(2))
-            : ((typeof Format !== 'undefined') ? Format.currency(Math.abs(remaining)) + ' over' : Math.abs(remaining).toFixed(2) + ' over');
-        
+
         return `
             <div class="budget-card">
-                <div class="percentage-badge ${badgeClass}">
-                    <i class="fas ${badgeIcon}"></i>
-                    ${percentage.toFixed(1)}% Used
-                </div>
-                
                 <div class="budget-header">
                     <div class="budget-info">
-                        <div class="budget-category">${budget.category || 'Uncategorized'}</div>
-                        <div class="budget-subtitle">Monthly budget tracking</div>
+                        <div class="budget-category">${budget.category}</div>
+                        <div class="budget-subtitle">Month: ${currentMonth}/${currentYear}</div>
                     </div>
                     <div class="budget-amounts">
-                        <div class="budget-spent">${spentText}</div>
-                        <div class="budget-total">of ${totalText}</div>
+                        <div class="budget-spent">₹${spent.toLocaleString()}</div>
+                        <div class="budget-total">of ₹${amount.toLocaleString()}</div>
                     </div>
                 </div>
-                
+
+                <div class="percentage-badge ${badgeClass}">
+                    <i class="fas fa-chart-pie"></i>
+                    ${percentage}% Used
+                </div>
+
                 <div class="progress-wrapper">
                     <div class="progress-bar">
-                        <div class="progress-fill ${progressClass}" 
-                             style="width: ${Math.min(percentage, 100)}%">
-                        </div>
+                        <div class="progress-fill ${progressClass}" style="width: ${Math.min(percentage, 100)}%"></div>
                     </div>
                 </div>
-                
+
                 <div class="budget-stats">
                     <div class="stat-item">
-                        <span class="stat-label">Remaining</span>
-                        <span class="stat-value ${remaining >= 0 ? 'positive' : 'negative'}">
-                            ${remainingText}
-                        </span>
+                        <span class="stat-label">Spent</span>
+                        <span class="stat-value negative">₹${spent.toLocaleString()}</span>
                     </div>
-                    <div class="stat-item" style="text-align: right;">
-                        <span class="stat-label">Status</span>
-                        <span class="stat-value ${remaining >= 0 ? 'positive' : 'negative'}">
-                            ${remaining >= 0 ? 'On Track' : 'Over Budget'}
-                        </span>
+                    <div class="stat-item">
+                        <span class="stat-label">Remaining</span>
+                        <span class="stat-value ${remaining >= 0 ? 'positive' : 'negative'}">₹${Math.abs(remaining).toLocaleString()}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Limit</span>
+                        <span class="stat-value">₹${amount.toLocaleString()}</span>
                     </div>
                 </div>
             </div>
@@ -157,70 +170,183 @@ function renderBudgets(budgets) {
     }).join('');
 }
 
-// Show empty state
 function showEmptyState() {
-    const list = $('budgetList');
-    if (!list) return;
-    list.innerHTML = `
-        <div style="text-align: center; padding: 3rem; background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 1rem;">
-            <i class="fas fa-chart-pie" style="font-size: 4rem; color: var(--text-tertiary); opacity: 0.5; margin-bottom: 1rem;"></i>
-            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 1rem;">No budgets set for this month</p>
-            <p style="color: var(--text-tertiary); margin-bottom: 2rem; font-size: 0.875rem;">Create budgets to track your spending by category</p>
-            <button class="btn-primary" onclick="Toast && Toast.info('Budget creation feature coming soon!')">
-                <i class="fas fa-plus"></i> Create Budget
-            </button>
-        </div>
-    `;
-    
-    // Update summary to zeros (guard elements)
-    const totalBudgetEl = $('totalBudget');
-    const totalSpentEl = $('totalSpent');
-    const remainingEl = $('remaining');
-    const spentPercentageEl = $('spentPercentage');
-    if (totalBudgetEl) totalBudgetEl.textContent = (typeof Format !== 'undefined') ? Format.currency(0) : '0.00';
-    if (totalSpentEl) totalSpentEl.textContent = (typeof Format !== 'undefined') ? Format.currency(0) : '0.00';
-    if (remainingEl) remainingEl.textContent = (typeof Format !== 'undefined') ? Format.currency(0) : '0.00';
-    if (spentPercentageEl) spentPercentageEl.textContent = '0% used';
+    const budgetList = document.getElementById('budgetList');
+    if (budgetList) {
+        budgetList.innerHTML = `
+            <div style="text-align: center; padding: 3rem;">
+                <i class="fas fa-inbox" style="font-size: 4rem; color: var(--text-tertiary); opacity: 0.5; margin-bottom: 1rem;"></i>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">No budgets created yet</p>
+                <button class="btn-add-budget" id="addFirstBudgetBtn">Create First Budget</button>
+            </div>
+        `;
+        const addFirstBtn = document.getElementById('addFirstBudgetBtn');
+        if (addFirstBtn) addFirstBtn.addEventListener('click', openAddModal);
+    }
 }
 
-// Setup event listeners
 function setupEventListeners() {
-    // Add budget button
-    const addBtn = $('addBudgetBtn');
-    if (addBtn) addBtn.addEventListener('click', () => {
-        if (typeof Toast !== 'undefined') Toast.info('Budget creation feature coming soon!');
-    });
+    const addBtn = document.getElementById('addBudgetBtn');
+    if (addBtn) addBtn.addEventListener('click', openAddModal);
     
-    // Logout
-    const logoutBtn = $('logoutBtn');
-    if (logoutBtn) logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (confirm('Logout?') && typeof API !== 'undefined' && API.logout) API.logout();
-    });
+    const closeBtn = document.getElementById('closeBudgetModal');
+    if (closeBtn) closeBtn.addEventListener('click', closeAddModal);
     
-    // Theme toggle
-    const themeToggle = $('themeToggle');
-    if (themeToggle) themeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('dark-theme');
-        const isDark = document.body.classList.contains('dark-theme');
-        const icon = document.querySelector('#themeToggle i');
-        if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-        if (typeof Storage !== 'undefined') Storage.set('theme', isDark ? 'dark' : 'light');
-    });
+    const modal = document.getElementById('addBudgetModal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target.id === 'addBudgetModal') closeAddModal();
+        });
+    }
     
-    // Load theme
-    try {
-        if (typeof Storage !== 'undefined' && Storage.get('theme') === 'dark') {
-            document.body.classList.add('dark-theme');
-            const icon = document.querySelector('#themeToggle i');
-            if (icon) icon.className = 'fas fa-sun';
-        }
-    } catch (e) { /* ignore storage errors */ }
+    const budgetForm = document.getElementById('budgetForm');
+    if (budgetForm) budgetForm.addEventListener('submit', handleAddBudget);
     
-    // Mobile toggle
-    const mobileToggle = $('mobileToggle');
-    if (mobileToggle) mobileToggle.addEventListener('click', () => {
-        const sidebar = $('sidebar');
-        if (sidebar) sidebar.classList.toggle('active');
-    });
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('Logout?')) API.logout();
+        });
+    }
+    
+    const mobileToggle = document.getElementById('mobileToggle');
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.toggle('active');
+        });
+    }
 }
+
+function openAddModal() {
+    const modal = document.getElementById('addBudgetModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeAddModal() {
+    const modal = document.getElementById('addBudgetModal');
+    if (modal) modal.classList.remove('active');
+    const form = document.getElementById('budgetForm');
+    if (form) form.reset();
+}
+
+// ✅ Handle add budget
+async function handleAddBudget(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    const formData = new FormData(form);
+    const category = formData.get('category') || '';
+    const amount = parseFloat(formData.get('amount'));
+    const month = parseInt(formData.get('month')) || currentMonth;
+    const year = parseInt(formData.get('year')) || currentYear;
+    
+    if (!category || !amount || amount <= 0) {
+        Toast.error('Please fill all required fields');
+        return;
+    }
+    
+    const data = {
+        category: category.trim(),
+        amount: amount,
+        month: month,
+        year: year
+    };
+    
+    try {
+        if (submitBtn) submitBtn.disabled = true;
+        Loading.show();
+        
+        await API.addBudget(data);
+        
+        Toast.success('Budget created successfully!');
+        closeAddModal();
+        form.reset();
+        await loadBudgets();
+    } catch (error) {
+        console.error('Error adding budget:', error);
+        Toast.error(error.message || 'Failed to create budget');
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
+        Loading.hide();
+    }
+}// ✅ Handle add budget with better error handling
+async function handleAddBudget(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    const formData = new FormData(form);
+    const category = formData.get('category') || '';
+    const amount = parseFloat(formData.get('amount'));
+    const month = parseInt(formData.get('month')) || currentMonth;
+    const year = parseInt(formData.get('year')) || currentYear;
+    
+    if (!category || !amount || amount <= 0) {
+        Toast.error('Please fill all required fields');
+        return;
+    }
+    
+    const data = {
+        category: category.trim(),
+        amount: amount,
+        month: month,
+        year: year
+    };
+    
+    try {
+        if (submitBtn) submitBtn.disabled = true;
+        Loading.show();
+        
+        console.log('Adding budget:', data);
+        await API.addBudget(data);
+        
+        Loading.hide();
+        Toast.success('Budget created successfully! ✅');
+        closeAddModal();
+        form.reset();
+        await loadBudgets();
+        
+    } catch (error) {
+        Loading.hide();
+        console.error('Full error object:', error);
+        
+        // ✅ Extract error message properly
+        let errorMessage = 'Failed to create budget';
+        
+        if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        // Show error as Toast notification (visible on page)
+        Toast.error(errorMessage);
+        
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
+    }
+}
+// ✅ Load theme on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = Storage.get('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        const icon = document.querySelector('#themeToggle i');
+        if (icon) icon.className = 'fas fa-sun';
+    }
+    
+    // Setup theme toggle
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            const icon = document.querySelector('#themeToggle i');
+            if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+            Storage.set('theme', isDark ? 'dark' : 'light');
+        });
+    }
+    
+    // ... rest of your code
+});

@@ -192,6 +192,218 @@
         .btn-add-budget:hover {
             transform: scale(1.1);
         }
+
+        /* ✅ Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            overflow: auto;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 1.5rem;
+            max-width: 500px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--border-color);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+        }
+        .modal-body {
+    padding: 1.5rem;
+    min-height: 300px;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 0.875rem;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: transform 0.2s;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+}
+
+/* ✅ Make sure Toast appears ABOVE modal */
+.toast-container {
+    z-index: 10001 !important;  /* Higher than modal's 10000 */
+}
+
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    color: white;
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+    z-index: 10001 !important;
+}
+
+.toast.error {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+}
+
+.toast.success {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
     </style>
 </head>
 <body>
@@ -234,7 +446,6 @@
                 <h1 class="page-title">Budget Planning</h1>
             </div>
             <div class="navbar-right">
-                <button class="icon-btn theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
                 <div class="user-profile">
                     <div class="user-avatar"><span id="userInitials">U</span></div>
                     <div class="user-info"><span class="user-name" id="userName">User</span></div>
@@ -249,7 +460,7 @@
                     <div class="stat-icon" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(129, 140, 248, 0.1)); color: var(--primary-color);"><i class="fas fa-wallet"></i></div>
                     <div class="stat-content">
                         <div class="stat-label">Total Budget</div>
-                        <div class="stat-value" id="totalBudget"><div class="skeleton-loader"></div></div>
+                        <div class="stat-value" id="totalBudget">₹0</div>
                         <div class="stat-trend">This month</div>
                     </div>
                 </div>
@@ -258,7 +469,7 @@
                     <div class="stat-icon expense-icon"><i class="fas fa-arrow-down"></i></div>
                     <div class="stat-content">
                         <div class="stat-label">Total Spent</div>
-                        <div class="stat-value" id="totalSpent"><div class="skeleton-loader"></div></div>
+                        <div class="stat-value" id="totalSpent">₹0</div>
                         <div class="stat-trend" id="spentPercentage">0% used</div>
                     </div>
                 </div>
@@ -267,7 +478,7 @@
                     <div class="stat-icon savings-icon"><i class="fas fa-piggy-bank"></i></div>
                     <div class="stat-content">
                         <div class="stat-label">Remaining</div>
-                        <div class="stat-value" id="remaining"><div class="skeleton-loader"></div></div>
+                        <div class="stat-value" id="remaining">₹0</div>
                         <div class="stat-trend" id="remainingPercentage">Available</div>
                     </div>
                 </div>
@@ -275,9 +486,9 @@
 
             <!-- Budget List -->
             <div class="budget-list" id="budgetList">
-                <div class="skeleton-loader" style="height: 150px;"></div>
-                <div class="skeleton-loader" style="height: 150px;"></div>
-                <div class="skeleton-loader" style="height: 150px;"></div>
+                <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                    <p>Loading budgets...</p>
+                </div>
             </div>
         </div>
     </main>
@@ -286,6 +497,50 @@
     <button class="btn-add-budget" id="addBudgetBtn" title="Add Budget">
         <i class="fas fa-plus"></i>
     </button>
+
+    <!-- Add Budget Modal -->
+    <div class="modal" id="addBudgetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Budget</h3>
+                <button type="button" class="modal-close" id="closeBudgetModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="budgetForm">
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select name="category" required>
+                            <option value="">Select category</option>
+                            <option value="Food">Food</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Education">Education</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Budget Amount *</label>
+                        <input type="number" name="amount" placeholder="Enter budget amount" required step="0.01" min="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Month</label>
+                        <input type="number" name="month" placeholder="Month (1-12)" min="1" max="12">
+                    </div>
+                    <div class="form-group">
+                        <label>Year</label>
+                        <input type="number" name="year" placeholder="Year" value="2025">
+                    </div>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-plus"></i> Add Budget
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/utils.js"></script>
     <script src="/js/api.js"></script>

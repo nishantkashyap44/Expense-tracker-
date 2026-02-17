@@ -7,5 +7,6 @@ router.use(protect);
 
 router.get('/', transactionController.getTransactions);
 router.post('/', transactionController.createTransaction);
+router.delete('/:id', transactionController.deleteTransaction); // ✅ Add this
 
 module.exports = router;

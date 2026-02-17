@@ -25,6 +25,9 @@ class Dashboard {
     try {
       Loading.show();
       
+      // ✅ Load theme FIRST before anything else
+      this.loadTheme();
+      
       // Setup event listeners
       this.setupEventListeners();
       
@@ -63,12 +66,17 @@ class Dashboard {
       });
     }
     
-    // Theme toggle
+    // ✅ FIXED: Theme toggle - Use arrow function to preserve 'this'
     const themeToggle = document.getElementById('themeToggle');
     if (themeToggle) {
-      themeToggle.addEventListener('click', () => this.toggleTheme());
-      // Load saved theme
-      this.loadTheme();
+      themeToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Theme toggle clicked');
+        this.toggleTheme();
+      });
+    } else {
+      console.warn('Theme toggle button not found');
     }
     
     // Mobile menu toggle
@@ -80,15 +88,13 @@ class Dashboard {
       });
     }
     
-    // Navigation items (visual active state + "coming soon" handling)
+    // Navigation items
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
       item.addEventListener('click', (e) => {
-        // toggle active class
         navItems.forEach(nav => nav.classList.remove('active'));
         item.classList.add('active');
 
-        // optionally show coming soon for pages other than dashboard
         const page = item.dataset.page;
         if (page && page !== 'dashboard') {
           e.preventDefault();
@@ -97,14 +103,13 @@ class Dashboard {
       });
     });
 
-    // Sidebar links navigation (handles actual page navigation)
+    // Sidebar links navigation
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
       link.addEventListener('click', (e) => {
         const href = link.getAttribute('href');
         if (!href) return;
         
-        // Handle in-app hash-style navigation
         if (href === '#dashboard') {
           e.preventDefault();
           window.location.href = '/dashboard.html';
@@ -199,13 +204,35 @@ class Dashboard {
     // Monthly Expense
     this.animateValue('monthlyExpense', 0, data.total_expense, 1000, true);
     
-    // Monthly Savings
-    this.animateValue('monthlySavings', 0, data.savings, 1000, true);
+    // ✅ FIXED: Monthly Savings - Calculate correctly
+    const totalIncome = Number(data.total_income || 0);
+    const totalExpenses = Number(data.total_expense || 0);
+    const correctSavings = totalIncome - totalExpenses;
+    
+    this.animateValue('monthlySavings', 0, correctSavings, 1000, true);
+    
+    // ✅ FIXED: Color the savings red if negative
+    const savingsElement = document.getElementById('monthlySavings');
+    if (savingsElement) {
+        if (correctSavings < 0) {
+            savingsElement.style.color = '#ef4444';
+        } else {
+            savingsElement.style.color = '#10b981';
+        }
+    }
     
     // Savings Rate
     const savingsRate = document.getElementById('savingsRate');
     if (savingsRate) {
-      savingsRate.textContent = `${data.savings_rate}% rate`;
+        const calculatedRate = totalIncome > 0 ? 
+            Math.round((correctSavings / totalIncome) * 100) : 0;
+        savingsRate.textContent = `${calculatedRate}% rate`;
+        
+        if (calculatedRate < 0) {
+            savingsRate.style.color = '#ef4444';
+        } else {
+            savingsRate.style.color = '#10b981';
+        }
     }
     
     // Update transaction counts
@@ -213,14 +240,14 @@ class Dashboard {
     const expenseChange = document.getElementById('expenseChange');
     
     if (incomeChange && data.transactions) {
-      incomeChange.textContent = `${data.transactions.income_count} transactions`;
+        incomeChange.textContent = `${data.transactions.income_count} transactions`;
     }
     
     if (expenseChange && data.transactions) {
-      expenseChange.textContent = `${data.transactions.expense_count} transactions`;
+        expenseChange.textContent = `${data.transactions.expense_count} transactions`;
     }
   }
-  
+
   // ===== Animate Number Value =====
   animateValue(elementId, start, end, duration, isCurrency = false) {
     const element = document.getElementById(elementId);
@@ -229,7 +256,7 @@ class Dashboard {
     // Remove skeleton loader
     const skeleton = element.querySelector('.skeleton-loader');
     if (skeleton) {
-      skeleton.remove();
+        skeleton.remove();
     }
     
     const range = end - start;
@@ -238,20 +265,22 @@ class Dashboard {
     let current = start;
     
     const timer = setInterval(() => {
-      current += increment;
-      if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
-        current = end;
-        clearInterval(timer);
-      }
-      
-      if (isCurrency) {
-        element.textContent = Format.currency(current);
-      } else {
-        element.textContent = Format.number(Math.round(current));
-      }
+        current += increment;
+        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+            current = end;
+            clearInterval(timer);
+        }
+        
+        if (isCurrency) {
+            const absValue = Math.abs(current);
+            const sign = current < 0 ? '-' : '';
+            element.textContent = sign + Format.currency(absValue);
+        } else {
+            element.textContent = Format.number(Math.round(current));
+        }
     }, 16);
   }
-  
+
   // ===== Load Recent Transactions =====
   async loadRecentTransactions() {
     try {
@@ -271,7 +300,6 @@ class Dashboard {
     const container = document.getElementById('recentTransactions');
     if (!container) return;
     
-    // Remove loading state
     const loading = container.querySelector('.transaction-loading');
     if (loading) loading.remove();
     
@@ -319,7 +347,6 @@ class Dashboard {
     const container = document.getElementById('budgetList');
     if (!container) return;
     
-    // Remove loading state
     const loading = container.querySelector('.budget-loading');
     if (loading) loading.remove();
     
@@ -369,7 +396,6 @@ class Dashboard {
         this.state.data.trend = response.data.trend;
         this.updateTrendChart(response.data.trend);
         
-        // Also update category chart with summary data
         if (this.state.data.summary && this.state.data.summary.top_categories) {
           this.updateCategoryChart(this.state.data.summary.top_categories);
         }
@@ -381,7 +407,6 @@ class Dashboard {
   
   // ===== Initialize Charts =====
   initializeCharts() {
-    // Trend Chart
     const trendCtx = document.getElementById('trendChart');
     if (trendCtx) {
       this.state.charts.trend = new Chart(trendCtx, {
@@ -437,7 +462,6 @@ class Dashboard {
       });
     }
     
-    // Category Chart
     const categoryCtx = document.getElementById('categoryChart');
     if (categoryCtx) {
       this.state.charts.category = new Chart(categoryCtx, {
@@ -478,7 +502,6 @@ class Dashboard {
       });
     }
 
-    // If data was loaded before charts were initialized, populate them now
     if (this.state.data.trend) {
       this.updateTrendChart(this.state.data.trend);
     }
@@ -488,7 +511,6 @@ class Dashboard {
     }
   }
   
-  // ===== Update Trend Chart =====
   updateTrendChart(trendData) {
     const trendEmptyEl = document.getElementById('trendChartEmpty');
     if (!this.state.charts.trend || !trendData || trendData.length === 0) {
@@ -510,7 +532,6 @@ class Dashboard {
     this.state.charts.trend.update();
   }
   
-  // ===== Update Category Chart =====
   updateCategoryChart(categories) {
     const categoryEmptyEl = document.getElementById('categoryChartEmpty');
     if (!this.state.charts.category || !categories || categories.length === 0) {
@@ -528,7 +549,6 @@ class Dashboard {
     this.state.charts.category.update();
   }
   
-  // ===== Show Empty State =====
   showEmptyState(type) {
     const emptyStateIds = {
       summary: null,
@@ -547,17 +567,24 @@ class Dashboard {
   
   // ===== Theme Management =====
   toggleTheme() {
+    console.log('toggleTheme() called');
     const body = document.body;
     const themeIcon = document.querySelector('#themeToggle i');
     
+    console.log('Current classes:', body.className);
     body.classList.toggle('dark-theme');
     const isDark = body.classList.contains('dark-theme');
     
+    console.log('After toggle:', body.className);
+    console.log('Is dark now:', isDark);
+    
     if (themeIcon) {
       themeIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+      console.log('Icon updated to:', themeIcon.className);
     }
     
     Storage.set('theme', isDark ? 'dark' : 'light');
+    console.log('Theme saved:', isDark ? 'dark' : 'light');
   }
   
   loadTheme() {
@@ -565,11 +592,20 @@ class Dashboard {
     const body = document.body;
     const themeIcon = document.querySelector('#themeToggle i');
     
+    console.log('loadTheme() - Saved theme:', savedTheme);
+    
     if (savedTheme === 'dark') {
       body.classList.add('dark-theme');
       if (themeIcon) {
         themeIcon.className = 'fas fa-sun';
       }
+      console.log('Dark theme applied');
+    } else {
+      body.classList.remove('dark-theme');
+      if (themeIcon) {
+        themeIcon.className = 'fas fa-moon';
+      }
+      console.log('Light theme applied');
     }
   }
   
@@ -580,7 +616,6 @@ class Dashboard {
       return;
     }
     
-    // Filter transactions by query
     const filtered = (this.state.data.transactions || []).filter(transaction => {
       const searchStr = query.toLowerCase();
       return (
@@ -605,13 +640,11 @@ class Dashboard {
 
 // ===== Initialize Dashboard on Page Load =====
 document.addEventListener('DOMContentLoaded', () => {
-  // Check if user is authenticated
   const token = API.getToken();
   if (!token) {
     window.location.href = '/login.html';
     return;
   }
   
-  // Initialize dashboard
   new Dashboard();
 });

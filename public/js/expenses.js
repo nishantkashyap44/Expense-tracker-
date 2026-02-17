@@ -283,3 +283,27 @@ async function handleAddExpense(e) {
         Loading.hide();
     }
 }
+
+// ✅ Load theme on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = Storage.get('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        const icon = document.querySelector('#themeToggle i');
+        if (icon) icon.className = 'fas fa-sun';
+    }
+    
+    // Setup theme toggle
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            const icon = document.querySelector('#themeToggle i');
+            if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+            Storage.set('theme', isDark ? 'dark' : 'light');
+        });
+    }
+    
+    // ... rest of your code
+});

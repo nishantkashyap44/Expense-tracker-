@@ -1,307 +1,312 @@
-// API Configuration
-const API_BASE_URL = window.location.origin + '/api';
+// ================= API CONFIG =================
+const API_BASE_URL = window.location.origin + "/api";
 
-// ===== API Service =====
+// ================= API SERVICE =================
 class APIService {
   constructor() {
     this.baseURL = API_BASE_URL;
-    this.token = Storage.get('authToken');
+    this.token = Storage.get("authToken");
   }
-  
-  // Set authentication token
+
+  // ===== TOKEN HANDLING =====
   setToken(token) {
     this.token = token;
-    Storage.set('authToken', token);
+    Storage.set("authToken", token);
   }
-  
-  // Get authentication token
+
   getToken() {
-    return this.token || Storage.get('authToken');
+    return this.token || Storage.get("authToken");
   }
-  
-  // Remove authentication token
+
   removeToken() {
     this.token = null;
-    Storage.remove('authToken');
+    Storage.remove("authToken");
   }
-  
-  // Make HTTP request
+
+  // ===== CORE REQUEST METHOD =====
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     const token = this.getToken();
-    
+
     const config = {
-      method: options.method || 'GET',
+      method: options.method || "GET",
       headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers
       }
     };
-    
+
     if (options.body) {
       config.body = JSON.stringify(options.body);
     }
-    
+
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
-      
-      // Handle authentication errors
+
+      const contentType = response.headers.get("content-type");
+      const data =
+        contentType && contentType.includes("application/json")
+          ? await response.json()
+          : null;
+
       if (response.status === 401) {
         this.handleUnauthorized();
-        throw new Error('Session expired. Please login again.');
+        throw new Error("Session expired");
       }
-      
+
       if (!response.ok) {
-        throw new Error(data.message || 'Request failed');
+        throw new Error(data?.message || "Request failed");
       }
-      
+
       return data;
+
     } catch (error) {
-      console.error('API Error:', error);
+      console.error("API ERROR:", error.message);
       throw error;
     }
   }
-  
-  // Handle unauthorized access
+
+  // ===== UNAUTHORIZED HANDLER =====
   handleUnauthorized() {
     this.removeToken();
-    Storage.remove('user');
-    
-    // Redirect to login if not already there
-    if (!window.location.pathname.includes('login')) {
-      Toast.error('Session expired. Please login again.');
+    Storage.remove("user");
+
+    if (!window.location.pathname.includes("login")) {
+      Toast.error("Session expired. Please login again.");
       setTimeout(() => {
-        window.location.href = '/login.html';
+        window.location.href = "/login.html";
       }, 1500);
     }
   }
-  
-  // ===== Authentication APIs =====
+
+  // ================= AUTH APIs =================
   async register(name, email, password) {
-    const data = await this.request('/auth/register', {
-      method: 'POST',
+    const data = await this.request("/auth/register", {
+      method: "POST",
       body: { name, email, password }
     });
-    
-    if (data.data && data.data.token) {
+
+    if (data?.data?.token) {
       this.setToken(data.data.token);
-      Storage.set('user', data.data.user);
+      Storage.set("user", data.data.user);
     }
-    
+
     return data;
   }
-  
+
   async login(email, password) {
-    const data = await this.request('/auth/login', {
-      method: 'POST',
+    const data = await this.request("/auth/login", {
+      method: "POST",
       body: { email, password }
     });
-    
-    if (data.data && data.data.token) {
+
+    if (data?.data?.token) {
       this.setToken(data.data.token);
-      Storage.set('user', data.data.user);
+      Storage.set("user", data.data.user);
     }
-    
+
     return data;
   }
-  
-  async getMe() {
-    const data = await this.request('/auth/me');
-    if (data.data && data.data.user) {
-      Storage.set('user', data.data.user);
-    }
-    return data;
-  }
-  
+
   async verifyToken(token) {
-    return await this.request('/auth/verify', {
-      method: 'POST',
+    return await this.request("/auth/verify", {
+      method: "POST",
       body: { token }
     });
   }
-  
+
   logout() {
     this.removeToken();
-    Storage.remove('user');
-    window.location.href = '/login.html';
+    Storage.remove("user");
+    window.location.href = "/login.html";
   }
-  
-  // ===== Dashboard APIs =====
+
+  // ================= DASHBOARD =================
   async getDashboardSummary(month, year) {
     const params = new URLSearchParams();
-    if (month) params.append('month', month);
-    if (year) params.append('year', year);
-    
-    const queryString = params.toString();
-    const endpoint = `/dashboard/summary${queryString ? '?' + queryString : ''}`;
-    
-    return await this.request(endpoint);
+    if (month) params.append("month", month);
+    if (year) params.append("year", year);
+    return await this.request(`/dashboard/summary?${params.toString()}`);
   }
-  
+
   async getRecentTransactions(limit = 10) {
     return await this.request(`/dashboard/recent-transactions?limit=${limit}`);
   }
-  
+
   async getMonthlyTrend() {
-    return await this.request('/dashboard/monthly-trend');
+    return await this.request("/dashboard/monthly-trend");
   }
-  
+
   async getBudgetComparison(month, year) {
     const params = new URLSearchParams();
-    if (month) params.append('month', month);
-    if (year) params.append('year', year);
-    
-    const queryString = params.toString();
-    const endpoint = `/dashboard/budget-comparison${queryString ? '?' + queryString : ''}`;
-    
-    return await this.request(endpoint);
+    if (month) params.append("month", month);
+    if (year) params.append("year", year);
+    return await this.request(`/dashboard/budget-comparison?${params.toString()}`);
   }
-  
-  // ===== Transaction APIs =====
+
+  // ================= TRANSACTIONS =================
   async getTransactions(filters = {}) {
     const params = new URLSearchParams(filters);
     return await this.request(`/transactions?${params.toString()}`);
   }
-  
+
   async addTransaction(transaction) {
-    return await this.request('/transactions', {
-      method: 'POST',
+    return await this.request("/transactions", {
+      method: "POST",
       body: transaction
     });
   }
-  
+
   async updateTransaction(id, transaction) {
     return await this.request(`/transactions/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: transaction
     });
   }
-  
+
   async deleteTransaction(id) {
     return await this.request(`/transactions/${id}`, {
-      method: 'DELETE'
+      method: "DELETE"
     });
   }
-  
-  // ===== Expense APIs =====
+
+  // ================= EXPENSE =================
   async getExpenses(month, year) {
     const params = new URLSearchParams();
-    if (month) params.append('month', month);
-    if (year) params.append('year', year);
-    
+    if (month) params.append("month", month);
+    if (year) params.append("year", year);
     return await this.request(`/expenses?${params.toString()}`);
   }
-  
+
   async addExpense(expense) {
-    return await this.request('/expenses', {
-      method: 'POST',
+    return await this.request("/expenses", {
+      method: "POST",
       body: expense
     });
   }
-  
+
   async updateExpense(id, expense) {
     return await this.request(`/expenses/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: expense
     });
   }
-  
+
   async deleteExpense(id) {
     return await this.request(`/expenses/${id}`, {
-      method: 'DELETE'
+      method: "DELETE"
     });
   }
-  
-  // ===== Budget APIs =====
+
+  // ================= BUDGET =================
   async getBudgets(month, year) {
     const params = new URLSearchParams();
-    if (month) params.append('month', month);
-    if (year) params.append('year', year);
-    
+    if (month) params.append("month", month);
+    if (year) params.append("year", year);
     return await this.request(`/budget?${params.toString()}`);
   }
-  
+
   async addBudget(budget) {
-    return await this.request('/budget', {
-      method: 'POST',
+    return await this.request("/budget", {
+      method: "POST",
       body: budget
     });
   }
-  
+
   async updateBudget(id, budget) {
     return await this.request(`/budget/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: budget
     });
   }
-  
+
   async deleteBudget(id) {
     return await this.request(`/budget/${id}`, {
-      method: 'DELETE'
+      method: "DELETE"
     });
   }
-  
-  // ===== Wallet APIs =====
+
+  // ================= WALLET =================
   async getWallet() {
-    return await this.request('/wallet');
+    return await this.request("/wallet");
   }
-  
+
   async addWalletTransaction(transaction) {
-    return await this.request('/wallet/transaction', {
-      method: 'POST',
+    return await this.request("/wallet/transaction", {
+      method: "POST",
       body: transaction
     });
   }
-  
-  // ===== Chart APIs =====
+
+  // ================= CHARTS =================
   async getChartData(type, month, year) {
     const params = new URLSearchParams();
-    if (month) params.append('month', month);
-    if (year) params.append('year', year);
-    
+    if (month) params.append("month", month);
+    if (year) params.append("year", year);
     return await this.request(`/charts/${type}?${params.toString()}`);
   }
-  
-  // ===== Report APIs =====
+
+  // ================= REPORTS =================
   async getReports(month, year) {
     const params = new URLSearchParams();
-    if (month) params.append('month', month);
-    if (year) params.append('year', year);
-    
+    if (month) params.append("month", month);
+    if (year) params.append("year", year);
     return await this.request(`/reports?${params.toString()}`);
   }
 }
 
-// Create global API instance
+// ================= CREATE INSTANCE =================
 const API = new APIService();
+window.API = API;
 
-// Check authentication on page load
-document.addEventListener('DOMContentLoaded', async () => {
+// ================= AUTH CHECK ✅ FIXED FOR 429 ERROR =================
+let authCheckDone = false; // ✅ Prevent multiple checks
+
+document.addEventListener("DOMContentLoaded", async () => {
+  // ✅ EXIT if already checked
+  if (authCheckDone) return;
+  authCheckDone = true;
+
   const token = API.getToken();
-  const currentPath = window.location.pathname;
-  
-  // Public pages
-  const publicPages = ['/login.html', '/register.html', '/'];
-  const isPublicPage = publicPages.some(page => currentPath.includes(page));
-  
-  if (!token && !isPublicPage && currentPath !== '/') {
-    // No token and not on public page - redirect to login
-    window.location.href = '/login.html';
-  } else if (token && (currentPath.includes('login') || currentPath.includes('register'))) {
-    // Has token but on login/register page - redirect to dashboard
-    window.location.href = '/dashboard.html';
-  } else if (token) {
-    // Verify token is still valid
+  const path = window.location.pathname;
+  const publicPages = ["/login.html", "/register.html", "/"];
+  const isPublic = publicPages.some(page => path.includes(page));
+
+  // Redirect to login if no token
+  if (!token && !isPublic) {
+    window.location.href = "/login.html";
+    return;
+  }
+
+  // Redirect to dashboard if logged in and on login page
+  if (token && (path.includes("login") || path.includes("register"))) {
+    window.location.href = "/dashboard.html";
+    return;
+  }
+
+  // ✅ Verify token with 5 second timeout (prevents rate limiting)
+  if (token && !isPublic) {
     try {
-      await API.verifyToken(token);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), 5000)
+      );
+
+      await Promise.race([
+        API.verifyToken(token),
+        timeoutPromise
+      ]);
+
+      console.log("✅ Token verified");
+
     } catch (error) {
-      // Token invalid - redirect to login
-      API.handleUnauthorized();
+      console.warn("Token verification warning:", error.message);
+      // Don't logout on timeout - just warn
+      if (error.message === "Session expired") {
+        API.handleUnauthorized();
+      }
     }
   }
 });
 
-// Export API
-window.API = API;
+
